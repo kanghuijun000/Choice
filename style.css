@@ -33,8 +33,7 @@ body {
   line-height: 1.5;
 }
 
-button,
-input {
+button, input {
   font: inherit;
 }
 
@@ -44,15 +43,13 @@ button {
   touch-action: manipulation;
 }
 
-button:focus-visible,
-input:focus-visible {
+button:focus-visible, input:focus-visible {
   outline: 2px solid #7fb4ff;
   outline-offset: 3px;
 }
 
 button:disabled {
   cursor: not-allowed;
-  opacity: 0.42;
 }
 
 .hidden {
@@ -98,7 +95,7 @@ button:disabled {
   font-size: 22px;
 }
 
-.online-indicator {
+.save-status {
   color: var(--green);
   font-size: 11px;
   white-space: nowrap;
@@ -114,49 +111,8 @@ main {
   animation: screen-in 0.18s ease-out;
 }
 
-/* 돈 화면은 불필요한 상단 여백을 최소화 */
-#moneyScreen {
-  padding-top: 5px;
-  padding-bottom: 8px;
-}
-
-#moneyScreen .section-heading {
-  margin-bottom: 12px;
-}
-
-#moneyScreen .section-heading h2 {
-  font-size: 24px;
-}
-
-#moneyScreen .section-heading p {
-  margin-top: 4px;
-}
-
-#moneyScreen .tabs {
-  margin-bottom: 10px;
-}
-
-#moneyScreen .panel {
-  padding: 16px;
-}
-
-#moneyScreen .bank-balance > strong {
-  margin: 3px 0 5px;
-  font-size: 25px;
-}
-
-#moneyScreen .summary-row {
-  padding: 9px 0;
-}
-
-#moneyScreen .bank-balance .muted {
-  margin-top: 7px;
-  font-size: 11px;
-  line-height: 1.45;
-}
-
 @keyframes screen-in {
-  from { opacity: 0.5; transform: translateY(4px); }
+  from { opacity: .5; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -172,19 +128,14 @@ main {
   letter-spacing: 2px;
 }
 
-.hero h2,
-.game-heading h2,
-.panel h2,
-.section-heading h2 {
+.hero h2, .game-heading h2, .panel h2, .section-heading h2 {
   margin: 0;
   font-size: clamp(23px, 6vw, 30px);
   line-height: 1.25;
-  letter-spacing: -0.7px;
+  letter-spacing: -.7px;
 }
 
-.hero > p:last-child,
-.section-heading p,
-.muted {
+.hero > p:last-child, .section-heading p, .muted {
   color: var(--muted);
 }
 
@@ -200,8 +151,7 @@ main {
   margin-bottom: 22px;
 }
 
-.stat-card,
-.panel {
+.stat-card, .panel {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: linear-gradient(145deg, var(--surface-2), var(--surface));
@@ -212,9 +162,7 @@ main {
   padding: 17px 15px;
 }
 
-.stat-card span,
-.game-stats span,
-.amount-summary span {
+.stat-card span, .game-stats span, .amount-summary span {
   display: block;
   color: var(--muted);
   font-size: 12px;
@@ -247,13 +195,11 @@ main {
   background: var(--surface);
   text-align: left;
   font-weight: 800;
-  transition: transform 0.12s, border-color 0.12s;
+  transition: transform .12s, border-color .12s;
 }
 
-.menu-button:active,
-.choice-card:active,
-.wide-button:active {
-  transform: scale(0.985);
+.menu-button:active, .choice-card:active, .wide-button:active {
+  transform: scale(.985);
 }
 
 .menu-button:hover {
@@ -294,18 +240,16 @@ main {
   margin-bottom: 8px;
 }
 
-.amount-summary,
-.summary-row {
+.amount-summary, .summary-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
   padding: 13px 0;
-  border-bottom: 1px solid rgba(140, 160, 200, 0.13);
+  border-bottom: 1px solid rgba(140, 160, 200, .13);
 }
 
-.amount-summary strong,
-.summary-row strong {
+.amount-summary strong, .summary-row strong {
   text-align: right;
   overflow-wrap: anywhere;
 }
@@ -349,8 +293,7 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
-input::-webkit-inner-spin-button,
-input::-webkit-outer-spin-button {
+input::-webkit-inner-spin-button, input::-webkit-outer-spin-button {
   margin: 0;
   -webkit-appearance: none;
 }
@@ -363,7 +306,7 @@ input::-webkit-outer-spin-button {
   border: 0;
   border-radius: 13px;
   font-weight: 800;
-  transition: transform 0.12s;
+  transition: transform .12s;
 }
 
 .primary {
@@ -392,7 +335,7 @@ input::-webkit-outer-spin-button {
 
 .game-stats {
   display: grid;
-  grid-template-columns: 0.9fr 1.3fr 0.5fr;
+  grid-template-columns: .9fr 1.3fr .5fr;
   gap: 8px;
 }
 
@@ -434,17 +377,17 @@ input::-webkit-outer-spin-button {
   position: relative;
   min-width: 0;
   min-height: 205px;
-  padding: 18px 12px;
+  padding: 17px 11px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 12px;
   overflow: hidden;
-  border: 2px solid transparent;
+  border: 1px solid transparent;
   border-radius: 20px;
   text-align: center;
-  transition: transform 0.12s, filter 0.12s;
+  transition: transform .12s, filter .12s;
 }
 
 .choice-card.blue {
@@ -461,17 +404,21 @@ input::-webkit-outer-spin-button {
   font-size: 10px;
   font-weight: 900;
   letter-spacing: 2px;
-  opacity: 0.85;
+  opacity: .85;
 }
 
-.choice-card strong {
-  font-size: clamp(16px, 4.2vw, 20px);
-  line-height: 1.3;
+.choice-effect {
+  font-size: clamp(25px, 6.4vw, 34px);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 
-.choice-card > span:not(.choice-color):not(.disabled-overlay) {
-  color: rgba(255, 255, 255, 0.9);
+.choice-penalty {
+  max-width: 100%;
+  color: rgba(255,255,255,.94);
   font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .disabled-overlay {
@@ -480,7 +427,7 @@ input::-webkit-outer-spin-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(4, 8, 18, 0.78);
+  background: rgba(4, 8, 18, .78);
   color: #fff;
   font-size: 66px;
   font-weight: 900;
@@ -488,7 +435,7 @@ input::-webkit-outer-spin-button {
 
 .choice-card:disabled {
   opacity: 1;
-  filter: saturate(0.65);
+  filter: saturate(.65);
 }
 
 .game-message {
@@ -507,8 +454,7 @@ input::-webkit-outer-spin-button {
   margin-top: 20px;
 }
 
-.game-actions button,
-.two-buttons button {
+.game-actions button, .two-buttons button {
   min-height: 48px;
   padding: 11px;
   border-radius: 13px;
@@ -578,8 +524,7 @@ input::-webkit-outer-spin-button {
   font-weight: 800;
 }
 
-.buy-button span,
-.buy-button small {
+.buy-button span, .buy-button small {
   display: block;
 }
 
@@ -593,6 +538,7 @@ input::-webkit-outer-spin-button {
   grid-template-columns: 1fr 1fr;
   gap: 6px;
   padding: 5px;
+  margin-bottom: 14px;
   border-radius: 14px;
   background: #080d19;
 }
@@ -672,6 +618,47 @@ input::-webkit-outer-spin-button {
   text-align: center;
 }
 
+/* 은행 화면만 상단 여백 축소 */
+#moneyScreen {
+  padding-top: 5px;
+  padding-bottom: 8px;
+}
+
+#moneyScreen .section-heading {
+  margin-bottom: 12px;
+}
+
+#moneyScreen .section-heading h2 {
+  font-size: 24px;
+}
+
+#moneyScreen .section-heading p {
+  margin-top: 4px;
+}
+
+#moneyScreen .tabs {
+  margin-bottom: 10px;
+}
+
+#moneyScreen .panel {
+  padding: 16px;
+}
+
+#moneyScreen .bank-balance > strong {
+  margin: 3px 0 5px;
+  font-size: 25px;
+}
+
+#moneyScreen .summary-row {
+  padding: 9px 0;
+}
+
+#moneyScreen .bank-balance .muted {
+  margin-top: 7px;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
 .modal {
   position: fixed;
   inset: 0;
@@ -680,7 +667,7 @@ input::-webkit-outer-spin-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(2, 5, 12, 0.78);
+  background: rgba(2, 5, 12, .78);
   backdrop-filter: blur(7px);
 }
 
@@ -691,7 +678,7 @@ input::-webkit-outer-spin-button {
   border: 1px solid var(--border);
   border-radius: 20px;
   background: #141d30;
-  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 22px 70px rgba(0,0,0,.4);
 }
 
 .modal-card h2 {
@@ -717,8 +704,12 @@ input::-webkit-outer-spin-button {
   }
 
   .choice-card {
-    min-height: 180px;
+    min-height: 190px;
     padding: 14px 8px;
+  }
+
+  .choice-penalty {
+    font-size: 11px;
   }
 
   .shop-item {
@@ -731,10 +722,8 @@ input::-webkit-outer-spin-button {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
   }
 }
