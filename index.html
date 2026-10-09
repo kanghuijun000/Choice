@@ -1,1234 +1,241 @@
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#101827">
-<title>리스크 게임</title>
-<style>
-:root {
-  --bg: #101827;
-  --panel: #1b2738;
-  --panel2: #243247;
-  --text: #f8fafc;
-  --muted: #aab8ca;
-  --blue: #1688e8;
-  --red: #e44755;
-  --green: #36c98a;
-  --border: #34445b;
-}
-* { box-sizing: border-box; }
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-family: system-ui, -apple-system, sans-serif;
-}
-button, input { font: inherit; }
-button {
-  color: var(--text);
-  border: 0;
-  border-radius: 12px;
-  padding: 13px 12px;
-  cursor: pointer;
-  font-weight: 700;
-  touch-action: manipulation;
-}
-button:disabled {
-  opacity: .42;
-  cursor: not-allowed;
-}
-.app {
-  width: 100%;
-  max-width: 520px;
-  min-height: 100dvh;
-  margin: 0 auto;
-  padding: 18px 16px 28px;
-}
-.hidden { display: none !important; }
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 18px;
-}
-h1 { font-size: 25px; margin: 0; }
-h2 { font-size: 21px; margin: 0; }
-h3 { font-size: 17px; margin: 0; }
-p { line-height: 1.5; }
-.muted { color: var(--muted); }
-.small { font-size: 13px; }
-.back-button {
-  background: var(--panel2);
-  padding: 9px 13px;
-}
-.info-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-bottom: 22px;
-}
-.info-card {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 15px 12px;
-  min-width: 0;
-}
-.info-label { color: var(--muted); font-size: 13px; margin-bottom: 7px; }
-.info-value {
-  font-size: clamp(18px, 5vw, 23px);
-  font-weight: 800;
-  overflow-wrap: anywhere;
-}
-.menu-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-.menu-button {
-  min-height: 108px;
-  font-size: 20px;
-  background: var(--panel2);
-  border: 1px solid var(--border);
-}
-.menu-button:active, .choice-button:active { transform: scale(.99); }
-.menu-button.shop { background: #305c91; }
-.menu-button.game { background: #167c60; }
-.menu-button.settings { background: #4a5064; }
-.menu-button.money { background: #866126; }
-.section-card {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 15px;
-  padding: 16px;
-  margin-bottom: 13px;
-}
-.row-between {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-.stack { display: flex; flex-direction: column; gap: 10px; }
-.primary { background: var(--blue); }
-.secondary { background: #35445a; }
-.danger { background: #a93240; }
-.success { background: #167b5b; }
-.full { width: 100%; }
-.input {
-  width: 100%;
-  min-width: 0;
-  color: var(--text);
-  background: #0d1522;
-  border: 1px solid #52627a;
-  border-radius: 10px;
-  padding: 13px;
-  outline: none;
-}
-.input:focus { border-color: #58b6ff; }
-.shop-item {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 15px;
-  margin-bottom: 12px;
-}
-.shop-item p { margin: 7px 0 12px; }
-.shop-item button { width: 100%; }
-.game-info {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-bottom: 16px;
-}
-.choice-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-.choice-button {
-  min-height: 245px;
-  position: relative;
-  overflow: hidden;
-  padding: 16px 10px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 13px;
-}
-.choice-button.blue { background: #126fc0; }
-.choice-button.red { background: #c93446; }
-.choice-color { font-size: 17px; font-weight: 800; }
-.choice-effect { font-size: clamp(27px, 7vw, 37px); font-weight: 900; }
-.choice-penalty {
-  font-size: 12px;
-  line-height: 1.4;
-  text-align: center;
-  overflow-wrap: anywhere;
-}
-.choice-button.forced-disabled { opacity: .55; }
-.choice-button.forced-disabled::after {
-  content: "×";
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 100px;
-  font-weight: 900;
-  color: white;
-  background: rgba(0,0,0,.5);
-}
-.game-actions {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 16px;
-}
-.game-actions button { min-width: 105px; }
-.note {
-  background: #26364a;
-  border-radius: 10px;
-  padding: 11px;
-  color: #dbeafe;
-  font-size: 13px;
-  margin: 0 0 14px;
-}
-.summary-number { font-size: 25px; font-weight: 900; }
-.positive { color: #4ade80; }
-.negative { color: #fb7185; }
-.bank-tabs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  position: sticky;
-  bottom: 0;
-  background: var(--bg);
-  padding: 12px 0 max(10px, env(safe-area-inset-bottom));
-  margin-top: 18px;
-}
-.bank-tab {
-  background: var(--panel2);
-  border: 1px solid var(--border);
-}
-.bank-tab.active { background: var(--blue); border-color: var(--blue); }
-.big-money { font-size: 29px; font-weight: 900; overflow-wrap: anywhere; }
-.interest { color: #4ade80; }
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.72);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 18px;
-  z-index: 100;
-}
-.modal {
-  width: 100%;
-  max-width: 400px;
-  background: #1b2738;
-  border: 1px solid #46556a;
-  border-radius: 18px;
-  padding: 20px;
-  box-shadow: 0 18px 60px rgba(0,0,0,.4);
-}
-.modal h2 { margin-bottom: 10px; }
-.modal p { color: var(--muted); font-size: 14px; }
-.modal-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-top: 16px;
-}
-.message {
-  min-height: 20px;
-  margin-top: 10px;
-  color: #fbbf24;
-  font-size: 13px;
-  line-height: 1.4;
-}
-.progress-track {
-  width: 100%;
-  height: 7px;
-  border-radius: 10px;
-  background: #34445b;
-  overflow: hidden;
-}
-.progress-bar {
-  height: 100%;
-  width: 0%;
-  background: var(--green);
-}
-@media (max-width: 360px) {
-  .app { padding: 14px 11px 24px; }
-  .choice-button { min-height: 225px; padding: 12px 7px; }
-  .choice-penalty { font-size: 11px; }
-}
-</style>
-<div class="app">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#111827">
+  <meta name="description" content="선택과 위험을 감수하며 돈을 관리하는 게임">
+  <title>리스크 게임</title>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="stylesheet" href="./style.css?v=5">
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <button id="backButton" class="icon-button hidden" aria-label="뒤로">←</button>
+      <h1 id="headerTitle">리스크 게임</h1>
+      <span id="saveStatus" class="online-indicator">저장됨</span>
+    </header>
 
-  <!-- 메인 화면 -->
-  <section id="homeScreen">
-    <div class="topbar">
-      <h1>리스크 게임</h1>
-    </div>
-    <div class="info-grid">
-      <div class="info-card">
-        <div class="info-label">리롤 보유량</div>
-        <div class="info-value" id="homeRerolls">5/5개</div>
-      </div>
-      <div class="info-card">
-        <div class="info-label">예산</div>
-        <div class="info-value" id="homeBudget">10,000원</div>
-      </div>
-    </div>
-    <div class="menu-grid">
-      <button class="menu-button shop" id="openShop">상점</button>
-      <button class="menu-button game" id="openGame">게임</button>
-      <button class="menu-button settings" id="openSettings">설정</button>
-      <button class="menu-button money" id="openBank">돈</button>
-    </div>
-  </section>
+    <main>
+      <section id="homeScreen" class="screen">
+        <div class="hero">
+          <p class="eyebrow">RISK & REWARD</p>
+          <h2>얼마나 걸어볼까?</h2>
+          <p>선택에는 보상이 따르지만, 위험도 함께합니다.</p>
+        </div>
 
-  <!-- 상점 -->
-  <section id="shopScreen" class="hidden">
-    <div class="topbar">
-      <h1>상점</h1>
-      <button class="back-button" data-home>돌아가기</button>
-    </div>
-    <div class="info-card" style="margin-bottom:14px">
-      <div class="info-label">사용 가능한 예산</div>
-      <div class="info-value" id="shopBudget">10,000원</div>
-    </div>
-    <div class="shop-item">
-      <h3>게임 금액 한도 증가</h3>
-      <p class="muted small" id="limitDescription">현재 한도: 5,000원</p>
-      <button class="primary" id="buyLimit">구매</button>
-    </div>
-    <div class="shop-item">
-      <h3>리롤 구매</h3>
-      <p class="muted small">리롤 1개를 구매합니다. 가격은 10,000원입니다.</p>
-      <button class="primary" id="buyReroll">리롤 1개 구매 · 10,000원</button>
-    </div>
-    <div class="shop-item">
-      <h3>리롤 보유 한도 증가</h3>
-      <p class="muted small" id="capDescription">현재 한도: 5개</p>
-      <button class="primary" id="buyCap">구매</button>
-    </div>
-    <div id="shopMessage" class="message" role="status"></div>
-  </section>
+        <div class="stats-grid">
+          <article class="stat-card">
+            <span>보유 예산</span>
+            <strong id="budgetDisplay">10,000원</strong>
+          </article>
+          <article class="stat-card">
+            <span>리롤 횟수</span>
+            <strong id="rerollDisplay">5 / 5개</strong>
+          </article>
+        </div>
 
-  <!-- 게임 금액 설정 -->
-  <section id="gameSetupScreen" class="hidden">
-    <div class="topbar">
-      <h1>게임 시작</h1>
-      <button class="back-button" data-home>돌아가기</button>
-    </div>
-    <div class="section-card">
-      <div class="row-between">
-        <span class="muted">현재 예산</span>
-        <strong id="setupBudget">10,000원</strong>
-      </div>
-      <div class="row-between" style="margin-top:12px">
-        <span class="muted">게임 금액 한도</span>
-        <strong id="setupLimit">5,000원</strong>
-      </div>
-      <label for="gameAmount" style="display:block;margin:20px 0 8px;font-weight:700">게임에 사용할 금액</label>
-      <input class="input" id="gameAmount" type="number" inputmode="numeric" min="1000" step="1000" value="5000">
-      <p class="muted small">최소 1,000원이며, 1,000원 단위로 입력할 수 있어요.</p>
-      <button class="primary full" id="startGame" style="margin-top:8px">게임 시작</button>
-      <div id="setupMessage" class="message" role="status"></div>
-    </div>
-  </section>
+        <div class="menu-grid">
+          <button class="menu-button" data-screen="shopScreen">
+            <span class="menu-icon">🛒</span><span>상점</span>
+          </button>
+          <button id="startGameButton" class="menu-button primary">
+            <span class="menu-icon">🎲</span><span>게임</span>
+          </button>
+          <button class="menu-button" data-screen="settingsScreen">
+            <span class="menu-icon">⚙️</span><span>설정</span>
+          </button>
+          <button class="menu-button" data-screen="moneyScreen">
+            <span class="menu-icon">💰</span><span>돈</span>
+          </button>
+        </div>
+      </section>
 
-  <!-- 실제 게임 -->
-  <section id="gameScreen" class="hidden">
-    <div class="topbar">
-      <h1>리스크 게임</h1>
-    </div>
-    <div class="game-info">
-      <div class="info-card">
-        <div class="info-label">리롤</div>
-        <div class="info-value" id="gameRerolls">5/5개</div>
-      </div>
-      <div class="info-card">
-        <div class="info-label">현재 게임 금액</div>
-        <div class="info-value" id="gameMoney">5,000원</div>
-      </div>
-    </div>
-    <div id="turnNote" class="note">선택지를 골라 주세요.</div>
-    <div class="choice-grid">
-      <button id="blueChoice" class="choice-button blue">
-        <span class="choice-color">파랑</span>
-        <span class="choice-effect">+50%</span>
-        <span class="choice-penalty">패널티: 없음</span>
-      </button>
-      <button id="redChoice" class="choice-button red">
-        <span class="choice-color">빨강</span>
-        <span class="choice-effect">-25%</span>
-        <span class="choice-penalty">패널티: 없음</span>
-      </button>
-    </div>
-    <div class="game-actions">
-      <button class="secondary" id="rerollButton">리롤</button>
-      <button class="danger" id="stopGame">중지</button>
-    </div>
-    <div id="gameMessage" class="message" role="status"></div>
-  </section>
+      <section id="amountScreen" class="screen hidden">
+        <div class="panel">
+          <p class="eyebrow">GAME SETUP</p>
+          <h2>게임 금액 설정</h2>
+          <p class="muted">게임이 끝나면 남은 금액을 정산합니다.</p>
 
-  <!-- 게임 결과 -->
-  <section id="summaryScreen" class="hidden">
-    <div class="topbar"><h1>게임 결과</h1></div>
-    <div class="section-card">
-      <div class="muted small">시작 금액</div>
-      <div class="summary-number" id="summaryStart">5,000원</div>
-      <div class="muted small" style="margin-top:18px">최종 게임 금액</div>
-      <div class="summary-number" id="summaryFinal">5,000원</div>
-      <div class="muted small" style="margin-top:18px">수익 / 손실</div>
-      <div class="summary-number" id="summaryProfit">0원</div>
-      <p class="muted small">확인을 누르면 남은 게임 금액이 예산으로 돌아갑니다.</p>
-      <button class="primary full" id="confirmSummary">확인</button>
-    </div>
-  </section>
+          <div class="amount-summary">
+            <span>사용 가능 예산</span>
+            <strong id="availableBudgetDisplay">10,000원</strong>
+          </div>
+          <div class="amount-summary">
+            <span>현재 게임 한도</span>
+            <strong id="gameLimitDisplay">5,000원</strong>
+          </div>
 
-  <!-- 설정: 현재는 안내 화면 -->
-  <section id="settingsScreen" class="hidden">
-    <div class="topbar">
-      <h1>설정</h1>
-      <button class="back-button" data-home>돌아가기</button>
-    </div>
-    <div class="section-card">
-      <h3>설정</h3>
-      <p class="muted">설정 기능은 아직 추가되지 않았습니다.</p>
-    </div>
-  </section>
-</div>
+          <label for="gameAmount">걸 금액 (1,000원 단위)</label>
+          <div class="amount-controls">
+            <button id="amountMinus" aria-label="금액 줄이기">−</button>
+            <input id="gameAmount" type="number" min="1000" step="1000" inputmode="numeric" value="1000">
+            <button id="amountPlus" aria-label="금액 늘리기">＋</button>
+          </div>
+          <p id="amountError" class="error-message" role="status"></p>
+          <button id="confirmStartButton" class="wide-button primary">게임 시작</button>
+          <button class="wide-button secondary" data-screen="homeScreen">취소</button>
+        </div>
+      </section>
 
-<!-- 은행 화면 -->
-<div class="app hidden" id="bankScreen">
-  <div class="topbar">
-    <h1 id="bankPageTitle">은행</h1>
-    <button class="back-button" id="bankBack">돌아가기</button>
+      <section id="gameScreen" class="screen hidden">
+        <div class="game-stats">
+          <div><span>리롤</span><strong id="gameRerollDisplay">5 / 5</strong></div>
+          <div><span>현재 금액</span><strong id="gameMoneyDisplay">1,000원</strong></div>
+          <div><span>턴</span><strong id="turnDisplay">1</strong></div>
+        </div>
+
+        <div class="game-heading">
+          <p class="eyebrow">MAKE YOUR CHOICE</p>
+          <h2>어느 쪽을 선택할까?</h2>
+          <p id="forcedHint" class="muted hidden">이번 턴에는 지정된 색상을 선택해야 합니다.</p>
+        </div>
+
+        <div class="choice-grid">
+          <button id="choiceLeft" class="choice-card blue">
+            <span class="choice-color" id="leftColor">BLUE</span>
+            <strong id="leftTitle">안정적인 선택</strong>
+            <span id="leftDescription">결과 확인하기</span>
+            <span id="leftOverlay" class="disabled-overlay hidden">✕</span>
+          </button>
+          <button id="choiceRight" class="choice-card red">
+            <span class="choice-color" id="rightColor">RED</span>
+            <strong id="rightTitle">위험한 선택</strong>
+            <span id="rightDescription">결과 확인하기</span>
+            <span id="rightOverlay" class="disabled-overlay hidden">✕</span>
+          </button>
+        </div>
+
+        <p id="gameMessage" class="game-message" role="status"></p>
+
+        <div class="game-actions">
+          <button id="rerollButton" class="secondary">🔄 리롤</button>
+          <button id="stopGameButton" class="danger">게임 중단</button>
+        </div>
+      </section>
+
+      <section id="summaryScreen" class="screen hidden">
+        <div class="panel summary-panel">
+          <p class="eyebrow">GAME RESULT</p>
+          <h2 id="summaryTitle">게임 종료</h2>
+          <p class="muted">결과를 확인한 후 정산을 완료하세요.</p>
+
+          <div class="summary-row"><span>시작 금액</span><strong id="summaryStart">1,000원</strong></div>
+          <div class="summary-row"><span>최종 금액</span><strong id="summaryFinal">0원</strong></div>
+          <div class="summary-row highlight"><span>손익</span><strong id="summaryProfit">0원</strong></div>
+
+          <p id="summaryMessage" class="game-message"></p>
+          <button id="settleButton" class="wide-button primary">정산하고 메인으로</button>
+        </div>
+      </section>
+
+      <section id="shopScreen" class="screen hidden">
+        <div class="section-heading">
+          <h2>상점</h2>
+          <p>예산을 사용해 게임 능력을 업그레이드하세요.</p>
+        </div>
+
+        <article class="shop-item">
+          <div>
+            <h3>게임 금액 한도 증가</h3>
+            <p>게임 한도를 5,000원 올립니다.</p>
+            <small>현재 한도: <strong id="shopLimitDisplay">5,000원</strong></small>
+          </div>
+          <button id="buyLimitButton" class="buy-button">
+            <span id="limitPrice">20,000원</span><small>구매</small>
+          </button>
+        </article>
+
+        <article class="shop-item">
+          <div>
+            <h3>리롤 1회 구매</h3>
+            <p>리롤을 한 번 추가합니다.</p>
+            <small>현재: <strong id="shopRerollDisplay">5 / 5</strong></small>
+          </div>
+          <button id="buyRerollButton" class="buy-button">
+            <span>10,000원</span><small>구매</small>
+          </button>
+        </article>
+
+        <article class="shop-item">
+          <div>
+            <h3>리롤 최대치 증가</h3>
+            <p>리롤 최대치를 5회 올립니다. 보유 횟수는 늘어나지 않습니다.</p>
+            <small>최대치: <strong id="shopCapDisplay">5개</strong></small>
+          </div>
+          <button id="buyCapButton" class="buy-button">
+            <span id="capPrice">5,000원</span><small>구매</small>
+          </button>
+        </article>
+        <p id="shopMessage" class="game-message" role="status"></p>
+      </section>
+
+      <section id="settingsScreen" class="screen hidden">
+        <div class="section-heading">
+          <h2>설정</h2>
+          <p>게임 설정 메뉴입니다.</p>
+        </div>
+        <div class="panel">
+          <p>현재 별도의 변경 가능한 설정은 없습니다.</p>
+          <p class="muted">게임 진행 데이터는 이 기기의 브라우저에 저장됩니다.</p>
+        </div>
+      </section>
+
+      <section id="moneyScreen" class="screen hidden">
+        <div class="section-heading">
+          <h2>돈 관리</h2>
+          <p>예산을 관리하고 보상을 받을 수 있습니다.</p>
+        </div>
+
+        <div class="tabs">
+          <button id="bankTab" class="tab-button active">은행</button>
+          <button id="wageTab" class="tab-button">시급</button>
+        </div>
+
+        <div id="bankPanel">
+          <div class="bank-balance panel">
+            <span>은행 원금</span>
+            <strong id="bankPrincipalDisplay">0원</strong>
+            <div class="summary-row"><span>누적 이자</span><strong id="bankInterestDisplay">0원</strong></div>
+            <div class="summary-row"><span>출금 가능 금액</span><strong id="bankTotalDisplay">0원</strong></div>
+            <p id="bankNextInterestDisplay" class="interest-countdown">다음 이자까지 01:00</p>
+            <p class="muted">분당 5% 단리입니다. 앱이 활성화된 시간만 계산하며, 완전한 1분이 지날 때 이자가 반영됩니다.</p>
+          </div>
+          <div class="two-buttons">
+            <button id="openDepositButton" class="primary">입금</button>
+            <button id="openWithdrawButton" class="secondary">출금</button>
+          </div>
+        </div>
+
+        <div id="wagePanel" class="hidden">
+          <div class="panel wage-panel">
+            <p class="eyebrow">HOURLY INCOME</p>
+            <h3>시급받기</h3>
+            <strong class="wage-amount">+5,000원</strong>
+            <p>1시간에 한 번 받을 수 있어요.</p>
+            <p id="wageCountdown" class="muted">지금 받을 수 있어요.</p>
+            <button id="claimWageButton" class="wide-button primary">시급받기</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">진행 상황은 이 기기에 자동 저장됩니다.</footer>
   </div>
 
-  <!-- 은행 탭 내용 -->
-  <section id="bankTabContent">
-    <div class="section-card">
-      <div class="muted small">이자율 · 단리</div>
-      <div class="big-money" style="color:#7dd3fc">분당 5%</div>
-      <p class="muted small">예치 원금 기준으로 계산하며, 앱이 활성 상태일 때만 이자가 쌓입니다.</p>
-    </div>
-    <div class="section-card">
-      <div class="row-between">
-        <span class="muted">예치한 금액</span>
-        <strong id="bankPrincipal">0원</strong>
-      </div>
-      <div class="row-between" style="margin-top:15px">
-        <span class="muted">쌓인 이자</span>
-        <strong class="interest" id="bankInterest">0원</strong>
-      </div>
-      <div style="height:1px;background:var(--border);margin:17px 0"></div>
-      <div class="muted small">출금 가능 금액</div>
-      <div class="big-money" id="bankTotal">0원</div>
-    </div>
-    <div class="row-between" style="gap:12px">
-      <button class="primary" style="flex:1" id="openDeposit">입금</button>
-      <button class="secondary" style="flex:1" id="openWithdraw">출금</button>
-    </div>
-    <p class="muted small">최소 입금 금액은 10,000원입니다. 출금은 원하는 금액만큼 할 수 있습니다.</p>
-  </section>
-
-  <!-- 시급 탭 내용 -->
-  <section id="wageTabContent" class="hidden">
-    <div class="section-card" style="text-align:center;padding:24px 16px">
-      <div class="muted small">1회 지급 금액</div>
-      <div class="big-money positive" style="margin:10px 0">5,000원</div>
-      <p class="muted">1시간에 한 번 받을 수 있어요.</p>
-    </div>
-    <div class="section-card">
-      <div class="row-between">
-        <span class="muted">지급 상태</span>
-        <strong id="wageStatus">받을 수 있어요</strong>
-      </div>
-      <div class="row-between" style="margin-top:14px">
-        <span class="muted">다음 지급까지</span>
-        <strong id="wageCountdown">받을 수 있어요</strong>
-      </div>
-      <div class="progress-track" style="margin-top:14px">
-        <div class="progress-bar" id="wageProgress"></div>
-      </div>
-    </div>
-    <button class="success full" id="claimWage">시급받기 · 5,000원</button>
-    <div class="message" id="wageMessage" role="status"></div>
-  </section>
-
-  <div class="bank-tabs">
-    <button class="bank-tab active" id="bankTabButton">은행</button>
-    <button class="bank-tab" id="wageTabButton">시급</button>
-  </div>
-</div>
-
-<!-- 입금/출금 공용 팝업 -->
-<div class="modal-overlay hidden" id="moneyModal">
-  <div class="modal">
-    <h2 id="moneyModalTitle">입금</h2>
-    <p id="moneyModalDescription">입금할 금액을 입력하세요.</p>
-    <input class="input" id="moneyAmountInput" type="number" inputmode="numeric" min="1" step="1" placeholder="금액 입력 (원)">
-    <div class="message" id="moneyModalMessage" role="status"></div>
-    <div class="modal-actions">
-      <button class="primary" id="confirmMoneyAction">확인</button>
-      <button class="secondary" id="closeMoneyModal">닫기</button>
+  <div id="moneyModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-card">
+      <button id="closeMoneyModal" class="modal-close" aria-label="닫기">✕</button>
+      <h2 id="modalTitle">입금</h2>
+      <p id="modalDescription" class="muted">입금할 금액을 입력하세요.</p>
+      <label for="moneyAmount">금액 (원)</label>
+      <input id="moneyAmount" type="number" min="1" step="1" inputmode="numeric" placeholder="금액 입력">
+      <p id="modalError" class="error-message" role="status"></p>
+      <button id="confirmMoneyButton" class="wide-button primary">확인</button>
     </div>
   </div>
-</div>
 
-<script>
-"use strict";
-
-const STORAGE_KEY = "risk-game-state-v3";
-const BANK_RATE_PER_MINUTE = 0.05;
-const WAGE_AMOUNT = 5000;
-const WAGE_COOLDOWN = 60 * 60 * 1000;
-
-const DEFAULT_STATE = {
-  budget: 10000,
-  gameLimit: 5000,
-  rerollCap: 5,
-  rerolls: 5,
-  bankPrincipal: 0,
-  bankInterest: 0,
-  lastWageClaim: 0
-};
-
-function loadState() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { ...DEFAULT_STATE };
-    const saved = JSON.parse(raw);
-    const result = { ...DEFAULT_STATE, ...saved };
-
-    for (const key of Object.keys(DEFAULT_STATE)) {
-      if (!Number.isFinite(result[key]) || result[key] < 0) {
-        result[key] = DEFAULT_STATE[key];
-      }
-    }
-
-    result.budget = Math.floor(result.budget);
-    result.gameLimit = Math.max(5000, Math.floor(result.gameLimit));
-    result.rerollCap = Math.min(50, Math.max(5, Math.floor(result.rerollCap)));
-    result.rerolls = Math.min(result.rerollCap, Math.floor(result.rerolls));
-    result.bankPrincipal = Math.floor(result.bankPrincipal);
-    result.bankInterest = Math.max(0, result.bankInterest);
-    result.lastWageClaim = Math.floor(result.lastWageClaim);
-    return result;
-  } catch (error) {
-    return { ...DEFAULT_STATE };
-  }
-}
-
-let state = loadState();
-let currentScreen = "home";
-let bankTab = "bank";
-let moneyModalMode = "deposit";
-let bankLastTick = document.visibilityState === "visible" ? Date.now() : null;
-
-let game = {
-  active: false,
-  startAmount: 0,
-  money: 0,
-  turn: 1,
-  choices: [],
-  forcedColor: null
-};
-
-function saveState() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch (error) {
-    console.warn("게임 데이터를 저장하지 못했습니다.", error);
-  }
-}
-
-function moneyText(value) {
-  return Math.floor(value).toLocaleString("ko-KR") + "원";
-}
-
-function showScreen(name) {
-  currentScreen = name;
-  const screens = {
-    home: "homeScreen",
-    shop: "shopScreen",
-    setup: "gameSetupScreen",
-    game: "gameScreen",
-    summary: "summaryScreen",
-    settings: "settingsScreen"
-  };
-
-  Object.entries(screens).forEach(([key, id]) => {
-    document.getElementById(id).classList.toggle("hidden", key !== name);
-  });
-
-  document.getElementById("bankScreen").classList.toggle("hidden", name !== "bank");
-  updateAll();
-  window.scrollTo(0, 0);
-}
-
-function openBankScreen() {
-  showScreen("bank");
-  setBankTab("bank");
-}
-
-function setBankTab(tab) {
-  bankTab = tab;
-  document.getElementById("bankTabContent").classList.toggle("hidden", tab !== "bank");
-  document.getElementById("wageTabContent").classList.toggle("hidden", tab !== "wage");
-  document.getElementById("bankTabButton").classList.toggle("active", tab === "bank");
-  document.getElementById("wageTabButton").classList.toggle("active", tab === "wage");
-  document.getElementById("bankPageTitle").textContent = tab === "bank" ? "은행" : "시급";
-  updateBankUI();
-  updateWageUI();
-}
-
-function updateHomeUI() {
-  document.getElementById("homeBudget").textContent = moneyText(state.budget);
-  document.getElementById("homeRerolls").textContent =
-    state.rerolls + "/" + state.rerollCap + "개";
-}
-
-function updateShopUI() {
-  document.getElementById("shopBudget").textContent = moneyText(state.budget);
-
-  const nextLimit = state.gameLimit + 5000;
-  const limitCost = nextLimit * 2;
-
-  document.getElementById("limitDescription").textContent =
-    "현재 한도: " + moneyText(state.gameLimit) +
-    " · 다음 한도: " + moneyText(nextLimit);
-
-  const limitButton = document.getElementById("buyLimit");
-  limitButton.textContent = "한도 증가 · " + moneyText(limitCost);
-  limitButton.disabled = state.budget < limitCost;
-
-  const rerollButton = document.getElementById("buyReroll");
-  rerollButton.textContent = "리롤 1개 구매 · 10,000원";
-  rerollButton.disabled =
-    state.budget < 10000 || state.rerolls >= state.rerollCap;
-
-  document.getElementById("capDescription").textContent =
-    "현재 한도: " + state.rerollCap + "개 · 보유량: " +
-    state.rerolls + "/" + state.rerollCap;
-
-  const capButton = document.getElementById("buyCap");
-  if (state.rerollCap >= 50) {
-    capButton.textContent = "최대 한도 도달";
-    capButton.disabled = true;
-  } else {
-    const capCost = 5000 + ((state.rerollCap - 5) / 5) * 2000;
-    capButton.textContent = "한도 +5개 · " + moneyText(capCost);
-    capButton.disabled = state.budget < capCost;
-  }
-}
-
-function updateSetupUI() {
-  document.getElementById("setupBudget").textContent = moneyText(state.budget);
-  document.getElementById("setupLimit").textContent = moneyText(state.gameLimit);
-
-  const maxAmount = Math.floor(Math.min(state.budget, state.gameLimit) / 1000) * 1000;
-  const input = document.getElementById("gameAmount");
-  input.max = Math.max(0, maxAmount);
-  input.value = maxAmount >= 1000 ? maxAmount : "";
-  document.getElementById("startGame").disabled = maxAmount < 1000;
-  document.getElementById("setupMessage").textContent =
-    maxAmount < 1000 ? "게임을 시작하려면 예산이 최소 1,000원 필요합니다." : "";
-}
-
-function updateGameUI() {
-  document.getElementById("gameRerolls").textContent =
-    state.rerolls + "/" + state.rerollCap + "개";
-  document.getElementById("gameMoney").textContent = moneyText(game.money);
-
-  const forced = game.forcedColor;
-  document.getElementById("turnNote").textContent = forced
-    ? "제 " + game.turn + "턴 · 이번 턴에는 " +
-      (forced === "blue" ? "파랑" : "빨강") + "만 선택할 수 있습니다."
-    : "제 " + game.turn + "턴 · 선택지를 골라 주세요.";
-
-  renderChoice("blueChoice", game.choices[0], "blue");
-  renderChoice("redChoice", game.choices[1], "red");
-
-  document.getElementById("rerollButton").disabled = state.rerolls <= 0;
-}
-
-function renderChoice(buttonId, choice, color) {
-  const button = document.getElementById(buttonId);
-  const isBlocked = game.forcedColor && game.forcedColor !== color;
-  button.disabled = Boolean(isBlocked);
-  button.classList.toggle("forced-disabled", Boolean(isBlocked));
-
-  if (!choice) return;
-
-  button.querySelector(".choice-color").textContent =
-    color === "blue" ? "파랑" : "빨강";
-  button.querySelector(".choice-effect").textContent =
-    (choice.percent > 0 ? "+" : "") + choice.percent + "%";
-  button.querySelector(".choice-penalty").textContent =
-    "패널티: " + (choice.penalty?.label || "없음");
-}
-
-function updateAll() {
-  updateHomeUI();
-  updateShopUI();
-  updateSetupUI();
-  if (game.active) updateGameUI();
-  updateBankUI();
-  updateWageUI();
-}
-
-function setShopMessage(message) {
-  document.getElementById("shopMessage").textContent = message;
-}
-
-function buyLimitUpgrade() {
-  const nextLimit = state.gameLimit + 5000;
-  const cost = nextLimit * 2;
-
-  if (state.budget < cost) {
-    setShopMessage("예산이 부족합니다.");
-    return;
-  }
-
-  state.budget -= cost;
-  state.gameLimit = nextLimit;
-  saveState();
-  setShopMessage("게임 금액 한도가 " + moneyText(nextLimit) + "로 증가했습니다.");
-  updateAll();
-}
-
-function buyReroll() {
-  if (state.rerolls >= state.rerollCap) {
-    setShopMessage("리롤 보유 한도에 도달했습니다.");
-    return;
-  }
-  if (state.budget < 10000) {
-    setShopMessage("예산이 부족합니다.");
-    return;
-  }
-
-  state.budget -= 10000;
-  state.rerolls += 1;
-  saveState();
-  setShopMessage("리롤 1개를 구매했습니다.");
-  updateAll();
-}
-
-function buyCapUpgrade() {
-  if (state.rerollCap >= 50) {
-    setShopMessage("리롤 보유 한도는 최대 50개입니다.");
-    return;
-  }
-
-  const cost = 5000 + ((state.rerollCap - 5) / 5) * 2000;
-  if (state.budget < cost) {
-    setShopMessage("예산이 부족합니다.");
-    return;
-  }
-
-  state.budget -= cost;
-  state.rerollCap = Math.min(50, state.rerollCap + 5);
-  saveState();
-  setShopMessage("리롤 보유 한도가 " + state.rerollCap + "개로 증가했습니다.");
-  updateAll();
-}
-
-function startGame() {
-  const inputValue = Number(document.getElementById("gameAmount").value);
-  const amount = Math.floor(inputValue);
-  const maxAmount = Math.min(state.budget, state.gameLimit);
-
-  if (!Number.isFinite(amount) || amount < 1000 || amount % 1000 !== 0) {
-    document.getElementById("setupMessage").textContent =
-      "1,000원 이상의 금액을 1,000원 단위로 입력하세요.";
-    return;
-  }
-  if (amount > maxAmount) {
-    document.getElementById("setupMessage").textContent =
-      "입력 금액이 예산 또는 게임 한도를 초과했습니다.";
-    return;
-  }
-
-  state.budget -= amount;
-  saveState();
-
-  game = {
-    active: true,
-    startAmount: amount,
-    money: amount,
-    turn: 1,
-    choices: [],
-    forcedColor: null
-  };
-
-  game.choices = generateChoices(null);
-  showScreen("game");
-}
-
-const NORMAL_CHOICES = [
-  { id: "p10", percent: 10, penalty: null },
-  { id: "p25", percent: 25, penalty: null },
-  { id: "p50", percent: 50, penalty: null },
-  { id: "p100", percent: 100, penalty: null },
-  { id: "m10", percent: -10, penalty: null },
-  { id: "m25", percent: -25, penalty: null },
-  { id: "m40", percent: -40, penalty: null },
-  { id: "m50", percent: -50, penalty: null },
-  {
-    id: "p25risk",
-    percent: 25,
-    penalty: { type: "chanceLoss", chance: 0.4, percent: 30, label: "40% 확률로 -30%" }
-  },
-  {
-    id: "p50risk",
-    percent: 50,
-    penalty: { type: "chanceLoss", chance: 0.25, percent: 50, label: "25% 확률로 -50%" }
-  },
-  {
-    id: "m10risk",
-    percent: -10,
-    penalty: { type: "chanceLoss", chance: 0.2, percent: 30, label: "20% 확률로 -30%" }
-  },
-  {
-    id: "forceRed",
-    percent: 25,
-    penalty: { type: "forceColor", chance: 0.35, color: "red", label: "35% 확률로 다음 턴 빨강 강제" }
-  },
-  {
-    id: "forceBlue",
-    percent: -10,
-    penalty: { type: "forceColor", chance: 0.35, color: "blue", label: "35% 확률로 다음 턴 파랑 강제" }
-  }
-];
-
-const EXTREME_CHOICE = {
-  id: "extreme1000",
-  percent: 1000,
-  penalty: { type: "loseAll", chance: 0.8, label: "80% 확률로 전액 손실" }
-};
-
-function pickChoice() {
-  if (Math.random() < 0.025) return { ...EXTREME_CHOICE, penalty: { ...EXTREME_CHOICE.penalty } };
-  const choice = NORMAL_CHOICES[Math.floor(Math.random() * NORMAL_CHOICES.length)];
-  return {
-    ...choice,
-    penalty: choice.penalty ? { ...choice.penalty } : null
-  };
-}
-
-function generateChoices(previousPair) {
-  let pair = [];
-  for (let attempt = 0; attempt < 60; attempt++) {
-    const blue = pickChoice();
-    let red = pickChoice();
-    let redAttempts = 0;
-    while (red.id === blue.id && redAttempts < 20) {
-      red = pickChoice();
-      redAttempts++;
-    }
-    if (red.id === blue.id) continue;
-
-    pair = [blue, red];
-    if (!previousPair ||
-        pair[0].id !== previousPair[0].id ||
-        pair[1].id !== previousPair[1].id) {
-      return pair;
-    }
-  }
-
-  // 매우 드문 반복 상황을 위한 안전한 기본 선택지
-  return [
-    { id: "fallback25", percent: 25, penalty: null },
-    { id: "fallbackMinus25", percent: -25, penalty: null }
-  ];
-}
-
-function applyMoneyChange(percent) {
-  if (game.money <= 0) return;
-  if (percent < 0 && game.money <= 1000) {
-    game.money = 0;
-    return;
-  }
-
-  const delta = Math.round(game.money * Math.abs(percent) / 100);
-  if (percent >= 0) {
-    game.money += delta;
-  } else {
-    game.money = Math.max(0, game.money - delta);
-  }
-}
-
-function applyPenalty(penalty) {
-  if (!penalty || game.money <= 0) return;
-
-  if (Math.random() >= penalty.chance) return;
-
-  if (penalty.type === "chanceLoss") {
-    applyMoneyChange(-Math.abs(penalty.percent));
-  } else if (penalty.type === "loseAll") {
-    game.money = 0;
-  } else if (penalty.type === "forceColor") {
-    game.forcedColor = penalty.color;
-  }
-}
-
-function chooseColor(color) {
-  if (!game.active) return;
-  if (game.forcedColor && game.forcedColor !== color) return;
-
-  const choice = game.choices[color === "blue" ? 0 : 1];
-  if (!choice) return;
-
-  // 이전 턴의 강제 색상 조건을 먼저 해제한다.
-  game.forcedColor = null;
-
-  // 기본 효과를 먼저 적용한 뒤 패널티를 별도로 판정한다.
-  applyMoneyChange(choice.percent);
-  if (game.money > 0) applyPenalty(choice.penalty);
-
-  if (game.money <= 0) {
-    game.money = 0;
-    finishGame();
-    return;
-  }
-
-  game.turn += 1;
-  game.choices = generateChoices(game.choices);
-  updateGameUI();
-}
-
-function rerollChoices() {
-  if (!game.active || state.rerolls <= 0) return;
-
-  state.rerolls -= 1;
-  game.choices = generateChoices(game.choices);
-  saveState();
-
-  // 리롤은 돈이나 강제 색상 조건을 변경하지 않는다.
-  updateAll();
-}
-
-function finishGame() {
-  if (!game.active) return;
-  game.active = false;
-
-  const profit = game.money - game.startAmount;
-  document.getElementById("summaryStart").textContent = moneyText(game.startAmount);
-  document.getElementById("summaryFinal").textContent = moneyText(game.money);
-
-  const profitElement = document.getElementById("summaryProfit");
-  profitElement.textContent = (profit > 0 ? "+" : "") + moneyText(profit);
-  profitElement.classList.toggle("positive", profit > 0);
-  profitElement.classList.toggle("negative", profit < 0);
-
-  showScreen("summary");
-}
-
-function confirmSummary() {
-  state.budget += Math.floor(game.money);
-  saveState();
-  game = {
-    active: false,
-    startAmount: 0,
-    money: 0,
-    turn: 1,
-    choices: [],
-    forcedColor: null
-  };
-  showScreen("home");
-}
-</script>
-
-<script>
-// ─────────────────────────────
-// 은행: 앱 활성 시간에만 이자 누적
-// ─────────────────────────────
-
-function accrueBankInterest() {
-  if (document.visibilityState !== "visible") {
-    bankLastTick = null;
-    return;
-  }
-
-  const now = Date.now();
-
-  if (bankLastTick !== null && state.bankPrincipal > 0) {
-    const elapsed = Math.max(0, now - bankLastTick);
-    state.bankInterest +=
-      state.bankPrincipal * BANK_RATE_PER_MINUTE * elapsed / 60000;
-  }
-
-  bankLastTick = now;
-  saveState();
-}
-
-function updateBankUI() {
-  document.getElementById("bankPrincipal").textContent =
-    moneyText(state.bankPrincipal);
-  document.getElementById("bankInterest").textContent =
-    moneyText(state.bankInterest);
-  document.getElementById("bankTotal").textContent =
-    moneyText(state.bankPrincipal + state.bankInterest);
-}
-
-function openMoneyModal(mode) {
-  moneyModalMode = mode;
-
-  const title = document.getElementById("moneyModalTitle");
-  const description = document.getElementById("moneyModalDescription");
-  const input = document.getElementById("moneyAmountInput");
-  const message = document.getElementById("moneyModalMessage");
-
-  input.value = "";
-  message.textContent = "";
-
-  if (mode === "deposit") {
-    title.textContent = "입금";
-    description.textContent =
-      "입금할 금액을 입력하세요. 최소 입금액은 10,000원입니다. 현재 예산: " +
-      moneyText(state.budget);
-    input.min = "10000";
-    input.placeholder = "입금할 금액 (최소 10,000원)";
-  } else {
-    title.textContent = "출금";
-    description.textContent =
-      "출금할 금액을 입력하세요. 출금 가능 금액: " +
-      moneyText(state.bankPrincipal + state.bankInterest);
-    input.min = "1";
-    input.placeholder = "출금할 금액";
-  }
-
-  document.getElementById("moneyModal").classList.remove("hidden");
-  input.focus();
-}
-
-function closeMoneyModal() {
-  document.getElementById("moneyModal").classList.add("hidden");
-  document.getElementById("moneyAmountInput").value = "";
-  document.getElementById("moneyModalMessage").textContent = "";
-}
-
-function confirmMoneyAction() {
-  accrueBankInterest();
-
-  const input = document.getElementById("moneyAmountInput");
-  const message = document.getElementById("moneyModalMessage");
-  const amount = Number(input.value);
-
-  if (!Number.isFinite(amount) || !Number.isSafeInteger(amount) || amount <= 0) {
-    message.textContent = "1원 이상의 정수 금액을 입력하세요.";
-    return;
-  }
-
-  if (moneyModalMode === "deposit") {
-    if (amount < 10000) {
-      message.textContent = "최소 입금 금액은 10,000원입니다.";
-      return;
-    }
-    if (amount > state.budget) {
-      message.textContent = "현재 예산보다 많은 금액은 입금할 수 없습니다.";
-      return;
-    }
-
-    // 입금 직전까지의 이자는 이미 계산되었다.
-    state.budget -= amount;
-    state.bankPrincipal += amount;
-    saveState();
-    closeMoneyModal();
-    updateAll();
-    return;
-  }
-
-  const total = state.bankPrincipal + state.bankInterest;
-  if (amount > Math.floor(total)) {
-    message.textContent = "출금 가능 금액을 초과했습니다.";
-    return;
-  }
-
-  // 누적 이자를 먼저 사용하고, 부족한 금액만 원금에서 뺀다.
-  const interestUsed = Math.min(amount, Math.floor(state.bankInterest));
-  state.bankInterest = Math.max(0, state.bankInterest - interestUsed);
-
-  const principalUsed = amount - interestUsed;
-  if (principalUsed > state.bankPrincipal) {
-    message.textContent = "출금 가능 금액을 초과했습니다.";
-    return;
-  }
-
-  state.bankPrincipal -= principalUsed;
-  state.budget += amount;
-
-  if (state.bankPrincipal < 0.000001) {
-    state.bankPrincipal = 0;
-  }
-  if (state.bankInterest < 0.000001) {
-    state.bankInterest = 0;
-  }
-
-  saveState();
-  closeMoneyModal();
-  updateAll();
-}
-
-// ─────────────────────────────
-// 시급: 1시간마다 5,000원
-// ─────────────────────────────
-
-function getWageRemaining() {
-  if (!state.lastWageClaim) return 0;
-  return Math.max(0, WAGE_COOLDOWN - (Date.now() - state.lastWageClaim));
-}
-
-function formatCountdown(ms) {
-  const totalSeconds = Math.ceil(ms / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-
-  return [hours, minutes, seconds]
-    .map(number => String(number).padStart(2, "0"))
-    .join(":");
-}
-
-function updateWageUI() {
-  const remaining = getWageRemaining();
-  const available = remaining <= 0;
-
-  document.getElementById("wageStatus").textContent =
-    available ? "받을 수 있어요" : "대기 중";
-  document.getElementById("wageCountdown").textContent =
-    available ? "받을 수 있어요" : formatCountdown(remaining);
-
-  document.getElementById("claimWage").disabled = !available;
-  document.getElementById("claimWage").textContent =
-    available ? "시급받기 · 5,000원" : "대기 중";
-
-  const elapsed = WAGE_COOLDOWN - remaining;
-  const progress = available ? 100 : Math.max(0, elapsed / WAGE_COOLDOWN * 100);
-  document.getElementById("wageProgress").style.width = progress + "%";
-}
-
-function claimWage() {
-  if (getWageRemaining() > 0) {
-    document.getElementById("wageMessage").textContent =
-      "아직 받을 수 없습니다. 대기 시간이 끝난 뒤 다시 눌러 주세요.";
-    updateWageUI();
-    return;
-  }
-
-  state.budget += WAGE_AMOUNT;
-  state.lastWageClaim = Date.now();
-
-  saveState();
-  document.getElementById("wageMessage").textContent =
-    "예산에 5,000원이 추가되었습니다.";
-  updateAll();
-}
-
-// ─────────────────────────────
-// 화면 전환과 버튼 연결
-// ─────────────────────────────
-
-document.getElementById("openShop").addEventListener("click", () => {
-  setShopMessage("");
-  showScreen("shop");
-});
-
-document.getElementById("openGame").addEventListener("click", () => {
-  document.getElementById("setupMessage").textContent = "";
-  showScreen("setup");
-});
-
-document.getElementById("openSettings").addEventListener("click", () => {
-  showScreen("settings");
-});
-
-document.getElementById("openBank").addEventListener("click", openBankScreen);
-
-document.querySelectorAll("[data-home]").forEach(button => {
-  button.addEventListener("click", () => showScreen("home"));
-});
-
-document.getElementById("buyLimit").addEventListener("click", buyLimitUpgrade);
-document.getElementById("buyReroll").addEventListener("click", buyReroll);
-document.getElementById("buyCap").addEventListener("click", buyCapUpgrade);
-
-document.getElementById("startGame").addEventListener("click", startGame);
-document.getElementById("blueChoice").addEventListener("click", () => chooseColor("blue"));
-document.getElementById("redChoice").addEventListener("click", () => chooseColor("red"));
-document.getElementById("rerollButton").addEventListener("click", rerollChoices);
-document.getElementById("stopGame").addEventListener("click", finishGame);
-document.getElementById("confirmSummary").addEventListener("click", confirmSummary);
-
-document.getElementById("bankBack").addEventListener("click", () => showScreen("home"));
-document.getElementById("bankTabButton").addEventListener("click", () => setBankTab("bank"));
-document.getElementById("wageTabButton").addEventListener("click", () => setBankTab("wage"));
-
-document.getElementById("openDeposit").addEventListener("click", () => {
-  accrueBankInterest();
-  openMoneyModal("deposit");
-});
-
-document.getElementById("openWithdraw").addEventListener("click", () => {
-  accrueBankInterest();
-  openMoneyModal("withdraw");
-});
-
-document.getElementById("confirmMoneyAction").addEventListener("click", confirmMoneyAction);
-document.getElementById("closeMoneyModal").addEventListener("click", closeMoneyModal);
-document.getElementById("claimWage").addEventListener("click", claimWage);
-
-// 팝업 바깥을 눌러 닫기
-document.getElementById("moneyModal").addEventListener("click", event => {
-  if (event.target.id === "moneyModal") closeMoneyModal();
-});
-
-// Enter 키로 입력 확인
-document.getElementById("moneyAmountInput").addEventListener("keydown", event => {
-  if (event.key === "Enter") confirmMoneyAction();
-});
-
-// 숨겨질 때까지의 이자를 계산하고, 숨겨진 동안에는 중지한다.
-document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "hidden") {
-    accrueBankInterest();
-    bankLastTick = null;
-  } else {
-    bankLastTick = Date.now();
-    updateBankUI();
-  }
-});
-
-window.addEventListener("pagehide", () => {
-  accrueBankInterest();
-  bankLastTick = null;
-  saveState();
-});
-
-// 활성 상태에서 이자와 시급 남은 시간을 갱신한다.
-setInterval(() => {
-  if (document.visibilityState === "visible") {
-    accrueBankInterest();
-  }
-  updateBankUI();
-  updateWageUI();
-}, 1000);
-
-// 최초 화면 구성
-updateAll();
-showScreen("home");
-</script>
+  <script src="./script.js?v=5" defer></script>
 </body>
 </html>
