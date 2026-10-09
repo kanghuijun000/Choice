@@ -4,238 +4,182 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <meta name="theme-color" content="#111827">
-  <meta name="description" content="선택과 위험을 감수하며 돈을 관리하는 게임">
+  <meta name="description" content="선택과 위험을 감수하는 리스크 게임">
   <title>리스크 게임</title>
   <link rel="manifest" href="./manifest.json">
-  <link rel="stylesheet" href="./style.css?v=5">
+  <link rel="stylesheet" href="./style.css?v=6">
 </head>
 <body>
-  <div class="app">
-    <header class="topbar">
-      <button id="backButton" class="icon-button hidden" aria-label="뒤로">←</button>
-      <h1 id="headerTitle">리스크 게임</h1>
-      <span id="saveStatus" class="online-indicator">저장됨</span>
-    </header>
+<div class="app">
+  <header class="topbar">
+    <button id="backButton" class="icon-button hidden" aria-label="뒤로 가기">←</button>
+    <h1 id="headerTitle">리스크 게임</h1>
+    <span id="saveStatus" class="save-status">저장됨</span>
+  </header>
 
-    <main>
-      <section id="homeScreen" class="screen">
-        <div class="hero">
-          <p class="eyebrow">RISK & REWARD</p>
-          <h2>얼마나 걸어볼까?</h2>
-          <p>선택에는 보상이 따르지만, 위험도 함께합니다.</p>
-        </div>
-
-        <div class="stats-grid">
-          <article class="stat-card">
-            <span>보유 예산</span>
-            <strong id="budgetDisplay">10,000원</strong>
-          </article>
-          <article class="stat-card">
-            <span>리롤 횟수</span>
-            <strong id="rerollDisplay">5 / 5개</strong>
-          </article>
-        </div>
-
-        <div class="menu-grid">
-          <button class="menu-button" data-screen="shopScreen">
-            <span class="menu-icon">🛒</span><span>상점</span>
-          </button>
-          <button id="startGameButton" class="menu-button primary">
-            <span class="menu-icon">🎲</span><span>게임</span>
-          </button>
-          <button class="menu-button" data-screen="settingsScreen">
-            <span class="menu-icon">⚙️</span><span>설정</span>
-          </button>
-          <button class="menu-button" data-screen="moneyScreen">
-            <span class="menu-icon">💰</span><span>돈</span>
-          </button>
-        </div>
-      </section>
-
-      <section id="amountScreen" class="screen hidden">
-        <div class="panel">
-          <p class="eyebrow">GAME SETUP</p>
-          <h2>게임 금액 설정</h2>
-          <p class="muted">게임이 끝나면 남은 금액을 정산합니다.</p>
-
-          <div class="amount-summary">
-            <span>사용 가능 예산</span>
-            <strong id="availableBudgetDisplay">10,000원</strong>
-          </div>
-          <div class="amount-summary">
-            <span>현재 게임 한도</span>
-            <strong id="gameLimitDisplay">5,000원</strong>
-          </div>
-
-          <label for="gameAmount">걸 금액 (1,000원 단위)</label>
-          <div class="amount-controls">
-            <button id="amountMinus" aria-label="금액 줄이기">−</button>
-            <input id="gameAmount" type="number" min="1000" step="1000" inputmode="numeric" value="1000">
-            <button id="amountPlus" aria-label="금액 늘리기">＋</button>
-          </div>
-          <p id="amountError" class="error-message" role="status"></p>
-          <button id="confirmStartButton" class="wide-button primary">게임 시작</button>
-          <button class="wide-button secondary" data-screen="homeScreen">취소</button>
-        </div>
-      </section>
-
-      <section id="gameScreen" class="screen hidden">
-        <div class="game-stats">
-          <div><span>리롤</span><strong id="gameRerollDisplay">5 / 5</strong></div>
-          <div><span>현재 금액</span><strong id="gameMoneyDisplay">1,000원</strong></div>
-          <div><span>턴</span><strong id="turnDisplay">1</strong></div>
-        </div>
-
-        <div class="game-heading">
-          <p class="eyebrow">MAKE YOUR CHOICE</p>
-          <h2>어느 쪽을 선택할까?</h2>
-          <p id="forcedHint" class="muted hidden">이번 턴에는 지정된 색상을 선택해야 합니다.</p>
-        </div>
-
-        <div class="choice-grid">
-          <button id="choiceLeft" class="choice-card blue">
-            <span class="choice-color" id="leftColor">BLUE</span>
-            <strong id="leftTitle">안정적인 선택</strong>
-            <span id="leftDescription">결과 확인하기</span>
-            <span id="leftOverlay" class="disabled-overlay hidden">✕</span>
-          </button>
-          <button id="choiceRight" class="choice-card red">
-            <span class="choice-color" id="rightColor">RED</span>
-            <strong id="rightTitle">위험한 선택</strong>
-            <span id="rightDescription">결과 확인하기</span>
-            <span id="rightOverlay" class="disabled-overlay hidden">✕</span>
-          </button>
-        </div>
-
-        <p id="gameMessage" class="game-message" role="status"></p>
-
-        <div class="game-actions">
-          <button id="rerollButton" class="secondary">🔄 리롤</button>
-          <button id="stopGameButton" class="danger">게임 중단</button>
-        </div>
-      </section>
-
-      <section id="summaryScreen" class="screen hidden">
-        <div class="panel summary-panel">
-          <p class="eyebrow">GAME RESULT</p>
-          <h2 id="summaryTitle">게임 종료</h2>
-          <p class="muted">결과를 확인한 후 정산을 완료하세요.</p>
-
-          <div class="summary-row"><span>시작 금액</span><strong id="summaryStart">1,000원</strong></div>
-          <div class="summary-row"><span>최종 금액</span><strong id="summaryFinal">0원</strong></div>
-          <div class="summary-row highlight"><span>손익</span><strong id="summaryProfit">0원</strong></div>
-
-          <p id="summaryMessage" class="game-message"></p>
-          <button id="settleButton" class="wide-button primary">정산하고 메인으로</button>
-        </div>
-      </section>
-
-      <section id="shopScreen" class="screen hidden">
-        <div class="section-heading">
-          <h2>상점</h2>
-          <p>예산을 사용해 게임 능력을 업그레이드하세요.</p>
-        </div>
-
-        <article class="shop-item">
-          <div>
-            <h3>게임 금액 한도 증가</h3>
-            <p>게임 한도를 5,000원 올립니다.</p>
-            <small>현재 한도: <strong id="shopLimitDisplay">5,000원</strong></small>
-          </div>
-          <button id="buyLimitButton" class="buy-button">
-            <span id="limitPrice">20,000원</span><small>구매</small>
-          </button>
+  <main>
+    <section id="homeScreen" class="screen">
+      <div class="hero">
+        <p class="eyebrow">RISK & REWARD</p>
+        <h2>얼마나 걸어볼까?</h2>
+        <p>선택에는 보상이 따르지만, 위험도 함께합니다.</p>
+      </div>
+      <div class="stats-grid">
+        <article class="stat-card">
+          <span>보유 예산</span>
+          <strong id="budgetDisplay">10,000원</strong>
         </article>
-
-        <article class="shop-item">
-          <div>
-            <h3>리롤 1회 구매</h3>
-            <p>리롤을 한 번 추가합니다.</p>
-            <small>현재: <strong id="shopRerollDisplay">5 / 5</strong></small>
-          </div>
-          <button id="buyRerollButton" class="buy-button">
-            <span>10,000원</span><small>구매</small>
-          </button>
+        <article class="stat-card">
+          <span>리롤 횟수</span>
+          <strong id="rerollDisplay">5 / 5개</strong>
         </article>
+      </div>
+      <div class="menu-grid">
+        <button class="menu-button" data-screen="shopScreen"><span class="menu-icon">🛒</span><span>상점</span></button>
+        <button id="startGameButton" class="menu-button primary"><span class="menu-icon">🎲</span><span>게임</span></button>
+        <button class="menu-button" data-screen="settingsScreen"><span class="menu-icon">⚙️</span><span>설정</span></button>
+        <button class="menu-button" data-screen="moneyScreen"><span class="menu-icon">💰</span><span>돈</span></button>
+      </div>
+    </section>
 
-        <article class="shop-item">
-          <div>
-            <h3>리롤 최대치 증가</h3>
-            <p>리롤 최대치를 5회 올립니다. 보유 횟수는 늘어나지 않습니다.</p>
-            <small>최대치: <strong id="shopCapDisplay">5개</strong></small>
-          </div>
-          <button id="buyCapButton" class="buy-button">
-            <span id="capPrice">5,000원</span><small>구매</small>
-          </button>
-        </article>
-        <p id="shopMessage" class="game-message" role="status"></p>
-      </section>
-
-      <section id="settingsScreen" class="screen hidden">
-        <div class="section-heading">
-          <h2>설정</h2>
-          <p>게임 설정 메뉴입니다.</p>
+    <section id="amountScreen" class="screen hidden">
+      <div class="panel">
+        <p class="eyebrow">GAME SETUP</p>
+        <h2>게임 금액 설정</h2>
+        <p class="muted">게임이 끝나면 남은 금액을 정산합니다.</p>
+        <div class="amount-summary"><span>사용 가능 예산</span><strong id="availableBudgetDisplay">10,000원</strong></div>
+        <div class="amount-summary"><span>현재 게임 한도</span><strong id="gameLimitDisplay">5,000원</strong></div>
+        <label for="gameAmount">걸 금액 (1,000원 단위)</label>
+        <div class="amount-controls">
+          <button id="amountMinus" aria-label="금액 줄이기">−</button>
+          <input id="gameAmount" type="number" min="1000" step="1000" inputmode="numeric" value="1000">
+          <button id="amountPlus" aria-label="금액 늘리기">＋</button>
         </div>
-        <div class="panel">
-          <p>현재 별도의 변경 가능한 설정은 없습니다.</p>
-          <p class="muted">게임 진행 데이터는 이 기기의 브라우저에 저장됩니다.</p>
-        </div>
-      </section>
+        <p id="amountError" class="error-message" role="status"></p>
+        <button id="confirmStartButton" class="wide-button primary">게임 시작</button>
+        <button class="wide-button secondary" data-screen="homeScreen">취소</button>
+      </div>
+    </section>
 
-      <section id="moneyScreen" class="screen hidden">
-        <div class="section-heading">
-          <h2>돈 관리</h2>
-          <p>예산을 관리하고 보상을 받을 수 있습니다.</p>
-        </div>
+    <section id="gameScreen" class="screen hidden">
+      <div class="game-stats">
+        <div><span>리롤</span><strong id="gameRerollDisplay">5 / 5</strong></div>
+        <div><span>현재 금액</span><strong id="gameMoneyDisplay">1,000원</strong></div>
+        <div><span>턴</span><strong id="turnDisplay">1</strong></div>
+      </div>
 
-        <div class="tabs">
-          <button id="bankTab" class="tab-button active">은행</button>
-          <button id="wageTab" class="tab-button">시급</button>
-        </div>
+      <div class="game-heading">
+        <p class="eyebrow">MAKE YOUR CHOICE</p>
+        <h2>어느 쪽을 선택할까?</h2>
+        <p id="forcedHint" class="muted hidden">다음 선택은 지정된 색상으로 해야 합니다.</p>
+      </div>
 
-        <div id="bankPanel">
-          <div class="bank-balance panel">
-            <span>은행 원금</span>
-            <strong id="bankPrincipalDisplay">0원</strong>
-            <div class="summary-row"><span>누적 이자</span><strong id="bankInterestDisplay">0원</strong></div>
-            <div class="summary-row"><span>출금 가능 금액</span><strong id="bankTotalDisplay">0원</strong></div>
-            <p id="bankNextInterestDisplay" class="interest-countdown">다음 이자까지 01:00</p>
-            <p class="muted">분당 5% 단리입니다. 앱이 활성화된 시간만 계산하며, 완전한 1분이 지날 때 이자가 반영됩니다.</p>
-          </div>
-          <div class="two-buttons">
-            <button id="openDepositButton" class="primary">입금</button>
-            <button id="openWithdrawButton" class="secondary">출금</button>
-          </div>
-        </div>
+      <div class="choice-grid">
+        <button id="choiceLeft" class="choice-card blue">
+          <span id="leftColor" class="choice-color">BLUE</span>
+          <strong id="leftTitle" class="choice-effect">+50%</strong>
+          <span id="leftDescription" class="choice-penalty">패널티: 없음</span>
+          <span id="leftOverlay" class="disabled-overlay hidden">✕</span>
+        </button>
+        <button id="choiceRight" class="choice-card red">
+          <span id="rightColor" class="choice-color">RED</span>
+          <strong id="rightTitle" class="choice-effect">+100%</strong>
+          <span id="rightDescription" class="choice-penalty">패널티: 30% 확률로 손실</span>
+          <span id="rightOverlay" class="disabled-overlay hidden">✕</span>
+        </button>
+      </div>
 
-        <div id="wagePanel" class="hidden">
-          <div class="panel wage-panel">
-            <p class="eyebrow">HOURLY INCOME</p>
-            <h3>시급받기</h3>
-            <strong class="wage-amount">+5,000원</strong>
-            <p>1시간에 한 번 받을 수 있어요.</p>
-            <p id="wageCountdown" class="muted">지금 받을 수 있어요.</p>
-            <button id="claimWageButton" class="wide-button primary">시급받기</button>
-          </div>
-        </div>
-      </section>
-    </main>
+      <p id="gameMessage" class="game-message" role="status"></p>
+      <div class="game-actions">
+        <button id="rerollButton" class="secondary">🔄 리롤</button>
+        <button id="stopGameButton" class="danger">게임 중지</button>
+      </div>
+    </section>
 
-    <footer class="footer">진행 상황은 이 기기에 자동 저장됩니다.</footer>
+    <section id="summaryScreen" class="screen hidden">
+      <div class="panel summary-panel">
+        <p class="eyebrow">GAME RESULT</p>
+        <h2 id="summaryTitle">게임 종료</h2>
+        <p class="muted">결과를 확인한 후 정산하세요.</p>
+        <div class="summary-row"><span>시작 금액</span><strong id="summaryStart">1,000원</strong></div>
+        <div class="summary-row"><span>최종 금액</span><strong id="summaryFinal">0원</strong></div>
+        <div class="summary-row highlight"><span>손익</span><strong id="summaryProfit">0원</strong></div>
+        <p id="summaryMessage" class="game-message"></p>
+        <button id="settleButton" class="wide-button primary">정산하고 메인으로</button>
+      </div>
+    </section>
+
+    <section id="shopScreen" class="screen hidden">
+      <div class="section-heading"><h2>상점</h2><p>예산을 사용해 게임 능력을 업그레이드하세요.</p></div>
+      <article class="shop-item">
+        <div><h3>게임 금액 한도 증가</h3><p>게임 한도를 5,000원 올립니다.</p><small>현재 한도: <strong id="shopLimitDisplay">5,000원</strong></small></div>
+        <button id="buyLimitButton" class="buy-button"><span id="limitPrice">20,000원</span><small>구매</small></button>
+      </article>
+      <article class="shop-item">
+        <div><h3>리롤 1회 구매</h3><p>리롤을 한 번 추가합니다.</p><small>현재: <strong id="shopRerollDisplay">5 / 5</strong></small></div>
+        <button id="buyRerollButton" class="buy-button"><span>10,000원</span><small>구매</small></button>
+      </article>
+      <article class="shop-item">
+        <div><h3>리롤 최대치 증가</h3><p>최대치를 5회 올립니다. 보유 리롤은 늘어나지 않습니다.</p><small>최대치: <strong id="shopCapDisplay">5개</strong></small></div>
+        <button id="buyCapButton" class="buy-button"><span id="capPrice">5,000원</span><small>구매</small></button>
+      </article>
+      <p id="shopMessage" class="game-message" role="status"></p>
+    </section>
+
+    <section id="settingsScreen" class="screen hidden">
+      <div class="section-heading"><h2>설정</h2><p>게임 설정 메뉴입니다.</p></div>
+      <div class="panel"><p>현재 변경 가능한 설정은 없습니다.</p><p class="muted">게임 진행 데이터는 이 기기에 저장됩니다.</p></div>
+    </section>
+
+    <section id="moneyScreen" class="screen hidden">
+      <div class="section-heading"><h2>돈 관리</h2><p>예산을 관리하고 보상을 받을 수 있습니다.</p></div>
+      <div class="tabs">
+        <button id="bankTab" class="tab-button active">은행</button>
+        <button id="wageTab" class="tab-button">시급</button>
+      </div>
+
+      <div id="bankPanel">
+        <div class="bank-balance panel">
+          <span>은행 원금</span>
+          <strong id="bankPrincipalDisplay">0원</strong>
+          <div class="summary-row"><span>누적 이자</span><strong id="bankInterestDisplay">0원</strong></div>
+          <div class="summary-row"><span>출금 가능 금액</span><strong id="bankTotalDisplay">0원</strong></div>
+          <p id="bankNextInterestDisplay" class="interest-countdown">다음 이자까지 01:00</p>
+          <p class="muted">분당 5% 단리입니다. 앱이 활성화된 시간만 계산하며, 1분이 지날 때 이자가 반영됩니다.</p>
+        </div>
+        <div class="two-buttons">
+          <button id="openDepositButton" class="primary">입금</button>
+          <button id="openWithdrawButton" class="secondary">출금</button>
+        </div>
+      </div>
+
+      <div id="wagePanel" class="hidden">
+        <div class="panel wage-panel">
+          <p class="eyebrow">HOURLY INCOME</p><h3>시급받기</h3>
+          <strong class="wage-amount">+5,000원</strong>
+          <p>1시간에 한 번 받을 수 있어요.</p>
+          <p id="wageCountdown" class="muted">지금 받을 수 있어요.</p>
+          <button id="claimWageButton" class="wide-button primary">시급받기</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">진행 상황은 이 기기에 자동 저장됩니다.</footer>
+</div>
+
+<div id="moneyModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal-card">
+    <button id="closeMoneyModal" class="modal-close" aria-label="닫기">✕</button>
+    <h2 id="modalTitle">입금</h2>
+    <p id="modalDescription" class="muted">입금할 금액을 입력하세요.</p>
+    <label for="moneyAmount">금액 (원)</label>
+    <input id="moneyAmount" type="number" min="1" step="1" inputmode="numeric" placeholder="금액 입력">
+    <p id="modalError" class="error-message" role="status"></p>
+    <button id="confirmMoneyButton" class="wide-button primary">확인</button>
   </div>
+</div>
 
-  <div id="moneyModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-    <div class="modal-card">
-      <button id="closeMoneyModal" class="modal-close" aria-label="닫기">✕</button>
-      <h2 id="modalTitle">입금</h2>
-      <p id="modalDescription" class="muted">입금할 금액을 입력하세요.</p>
-      <label for="moneyAmount">금액 (원)</label>
-      <input id="moneyAmount" type="number" min="1" step="1" inputmode="numeric" placeholder="금액 입력">
-      <p id="modalError" class="error-message" role="status"></p>
-      <button id="confirmMoneyButton" class="wide-button primary">확인</button>
-    </div>
-  </div>
-
-  <script src="./script.js?v=5" defer></script>
+<script src="./script.js?v=6" defer></script>
 </body>
 </html>
