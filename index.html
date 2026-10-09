@@ -3,12 +3,9 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-  >
-  <meta name="theme-color" content="#f4f6fb">
-  <title>게임 앱</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#101522">
+  <title>리스크 게임</title>
 
   <style>
     * {
@@ -17,36 +14,27 @@
     }
 
     :root {
-      --blue: #2878f0;
-      --blue-dark: #165bc4;
-      --red: #e53935;
-      --red-dark: #bd2926;
-      --background: #f4f6fb;
-      --text: #202738;
-      --muted: #778195;
-      --card: #ffffff;
-      --border: #e0e5ee;
+      color-scheme: dark;
+      --bg: #101522;
+      --panel: #1b2334;
+      --panel-light: #263149;
+      --text: #f5f7ff;
+      --muted: #aab4c9;
+      --blue: #2479ed;
+      --red: #e84149;
+      --green: #42d392;
     }
 
-    html,
     body {
-      width: 100%;
-      min-height: 100%;
       margin: 0;
-    }
-
-    body {
-      font-family:
-        -apple-system, BlinkMacSystemFont,
-        "Segoe UI", Roboto, "Noto Sans KR",
-        sans-serif;
-      background: var(--background);
+      min-height: 100dvh;
+      background: var(--bg);
       color: var(--text);
-      overscroll-behavior: none;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
     }
 
-    button,
-    input {
+    button, input {
       font: inherit;
     }
 
@@ -55,26 +43,20 @@
       touch-action: manipulation;
     }
 
-    button:focus-visible,
-    input:focus-visible {
-      outline: 3px solid #91baff;
-      outline-offset: 3px;
+    button:disabled {
+      cursor: not-allowed;
     }
 
     .screen {
       display: none;
-      width: 100%;
-      min-height: 100vh;
       min-height: 100dvh;
-      padding: 22px 20px;
+      padding: 20px 16px;
+      flex-direction: column;
     }
 
     .screen.active {
       display: flex;
-      flex-direction: column;
     }
-
-    /* 공통 상단 정보 */
 
     .top-info {
       display: grid;
@@ -83,918 +65,1020 @@
       width: 100%;
     }
 
-    .info-card {
+    .info-box {
       min-width: 0;
-      padding: 14px 8px;
-      background: var(--card);
-      border: 1px solid var(--border);
+      padding: 13px 10px;
+      border: 1px solid #344059;
       border-radius: 14px;
+      background: var(--panel);
       text-align: center;
-      font-size: 15px;
-      font-weight: 700;
-      overflow-wrap: anywhere;
     }
 
     .info-label {
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 500;
+      display: block;
       margin-bottom: 5px;
+      color: var(--muted);
+      font-size: 13px;
     }
 
     .info-value {
-      font-size: 17px;
-      font-weight: 800;
-      font-variant-numeric: tabular-nums;
-    }
-
-    /* 메인 화면 */
-
-    #mainScreen {
-      justify-content: flex-start;
-    }
-
-    .app-heading {
-      text-align: center;
-      margin: 35px 0 10px;
-    }
-
-    .app-heading h1 {
-      margin: 0;
-      font-size: 28px;
-      font-weight: 850;
-      letter-spacing: -1px;
-    }
-
-    .app-heading p {
-      margin: 9px 0 0;
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    .main-menu {
-      width: 100%;
-      max-width: 460px;
-      margin: auto;
-      padding: 25px 0;
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 16px;
-    }
-
-    .menu-button {
-      aspect-ratio: 1.08;
-      min-width: 0;
-      border: 0;
-      border-radius: 23px;
-      color: #fff;
-      font-size: 22px;
-      font-weight: 800;
-      box-shadow: 0 7px 15px rgba(24, 36, 65, 0.10);
-      transition: transform 0.12s, filter 0.12s;
-    }
-
-    .menu-button:active {
-      transform: scale(0.96);
-      filter: brightness(0.92);
-    }
-
-    .menu-button .menu-icon {
       display: block;
-      margin-bottom: 12px;
-      font-size: 38px;
-      line-height: 1;
-    }
-
-    .menu-shop {
-      background: #3478f6;
-    }
-
-    .menu-game {
-      background: #e64a45;
-    }
-
-    .menu-settings {
-      background: #64748b;
-    }
-
-    .menu-money {
-      background: #159b82;
-    }
-
-    .main-footer {
-      text-align: center;
-      color: var(--muted);
-      font-size: 12px;
-      padding: 0 0 10px;
-    }
-
-    /* 게임 화면 */
-
-    #gameScreen {
-      position: relative;
-      padding-bottom: 75px;
-    }
-
-    .game-heading {
-      margin: 20px 0 0;
-      text-align: center;
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    .game-button-area {
-      width: 100%;
-      max-width: 520px;
-      margin: auto;
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 15px;
-      align-items: center;
-    }
-
-    .game-button {
-      width: 100%;
-      aspect-ratio: 0.88;
-      min-width: 0;
-      border: 0;
-      border-radius: 25px;
-      color: #fff;
-      font-size: clamp(20px, 5vw, 27px);
-      font-weight: 850;
-      box-shadow: 0 9px 22px rgba(20, 35, 65, 0.15);
-      transition: transform 0.12s, filter 0.12s;
-    }
-
-    .game-button:active {
-      transform: scale(0.96);
-      filter: brightness(0.92);
-    }
-
-    .blue-button {
-      background: var(--blue);
-    }
-
-    .red-button {
-      background: var(--red);
-    }
-
-    .stop-button {
-      position: absolute;
-      right: 20px;
-      bottom: 20px;
-      min-width: 68px;
-      padding: 10px 17px;
-      border: 0;
-      border-radius: 10px;
-      background: #687386;
-      color: #fff;
-      font-size: 13px;
-      font-weight: 700;
-    }
-
-    .stop-button:active {
-      background: #4d5665;
-    }
-
-    /* 금액 입력 창 */
-
-    .modal-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      z-index: 100;
-      padding: 20px;
-      background: rgba(14, 22, 38, 0.52);
-      align-items: center;
-      justify-content: center;
-    }
-
-    .modal-overlay.open {
-      display: flex;
-    }
-
-    .modal {
-      width: 100%;
-      max-width: 390px;
-      max-height: 90vh;
-      overflow-y: auto;
-      padding: 25px 21px 21px;
-      background: #fff;
-      border-radius: 23px;
-      box-shadow: 0 15px 50px rgba(0, 0, 0, 0.18);
-      animation: modalIn 0.16s ease-out;
-    }
-
-    @keyframes modalIn {
-      from {
-        opacity: 0;
-        transform: translateY(8px) scale(0.98);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-      }
-    }
-
-    .modal h2 {
-      margin: 0;
-      text-align: center;
-      font-size: 23px;
-      letter-spacing: -0.5px;
-    }
-
-    .modal-description {
-      margin: 10px 0 23px;
-      color: var(--muted);
-      text-align: center;
-      font-size: 13px;
-      line-height: 1.6;
-    }
-
-    .amount-label {
-      display: block;
-      margin-bottom: 9px;
-      font-size: 14px;
-      font-weight: 750;
-    }
-
-    .amount-input-wrap {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 0 15px;
-      border: 1px solid #ccd5e3;
-      border-radius: 13px;
-      background: #fff;
-    }
-
-    .amount-input-wrap:focus-within {
-      border-color: var(--blue);
-      box-shadow: 0 0 0 3px rgba(40, 120, 240, 0.12);
-    }
-
-    #amountInput {
-      width: 100%;
-      min-width: 0;
-      height: 56px;
-      padding: 0;
-      border: 0;
-      outline: none;
-      background: transparent;
-      color: var(--text);
-      font-size: 22px;
+      font-size: clamp(16px, 4.5vw, 22px);
       font-weight: 800;
-    }
-
-    #amountInput:focus-visible {
-      outline: none;
-    }
-
-    .won-label {
-      color: #566176;
-      font-size: 18px;
-      font-weight: 700;
-    }
-
-    .amount-rules {
-      margin-top: 14px;
-      padding: 13px;
-      border-radius: 12px;
-      background: #f3f6fb;
-      color: #566176;
-      font-size: 13px;
-      line-height: 1.9;
-    }
-
-    .amount-rules strong {
-      color: #27364e;
-    }
-
-    .validation-message {
-      min-height: 20px;
-      margin: 11px 0 0;
-      font-size: 12px;
-      line-height: 1.6;
-      color: #d22f2f;
-    }
-
-    .validation-message.success {
-      color: #16834a;
-    }
-
-    .modal-actions {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: 17px;
-    }
-
-    .action-button {
-      min-height: 48px;
-      border: 0;
-      border-radius: 12px;
-      color: #fff;
-      font-size: 15px;
-      font-weight: 800;
-    }
-
-    .start-button {
-      background: var(--blue);
-    }
-
-    .start-button:active {
-      background: var(--blue-dark);
-    }
-
-    .cancel-button {
-      background: #7a8495;
-    }
-
-    .cancel-button:active {
-      background: #606a7a;
-    }
-
-    /* 안내 창 */
-
-    .notice-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      z-index: 200;
-      padding: 20px;
-      background: rgba(14, 22, 38, 0.48);
-      align-items: center;
-      justify-content: center;
-    }
-
-    .notice-overlay.open {
-      display: flex;
-    }
-
-    .notice-box {
-      width: 100%;
-      max-width: 320px;
-      padding: 24px;
-      border-radius: 19px;
-      background: #fff;
-      text-align: center;
-    }
-
-    .notice-box p {
-      margin: 0 0 20px;
-      font-size: 15px;
-      line-height: 1.7;
       overflow-wrap: anywhere;
     }
 
-    .notice-box button {
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
       width: 100%;
-      min-height: 44px;
-      border: 0;
-      border-radius: 11px;
-      background: var(--blue);
-      color: #fff;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    .app-title {
+      margin: 0 0 12px;
+      text-align: center;
+      font-size: 30px;
+      font-weight: 900;
+    }
+
+    .subtitle {
+      margin: 0 0 30px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 14px;
+    }
+
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 13px;
+    }
+
+    .menu-button {
+      min-height: 105px;
+      border: 1px solid #394761;
+      border-radius: 19px;
+      background: var(--panel);
+      color: var(--text);
+      font-size: 21px;
       font-weight: 800;
+      transition: transform 0.12s, background 0.12s;
+    }
+
+    .menu-button:active {
+      transform: scale(0.97);
+      background: var(--panel-light);
+    }
+
+    .game-layout {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      width: 100%;
+      max-width: 700px;
+      margin: 0 auto;
+      gap: 24px;
+    }
+
+    .turn-label {
+      color: var(--muted);
+      text-align: center;
+      font-size: 14px;
+    }
+
+    .choices {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 13px;
+    }
+
+    .choice {
+      position: relative;
+      min-width: 0;
+      min-height: 265px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 20px 10px;
+      border: 2px solid transparent;
+      border-radius: 22px;
+      color: #fff;
+      overflow: hidden;
+      user-select: none;
+      transition: transform 0.12s, filter 0.12s;
+    }
+
+    .choice.blue {
+      background: linear-gradient(155deg, #318cff, #1454c5);
+      border-color: #5da5ff;
+    }
+
+    .choice.red {
+      background: linear-gradient(155deg, #ff5b62, #bc202e);
+      border-color: #ff8589;
+    }
+
+    .choice:not(:disabled):active {
+      transform: scale(0.97);
+    }
+
+    .choice:disabled {
+      cursor: not-allowed;
+    }
+
+    .choice-color-name {
+      font-size: 19px;
+      font-weight: 800;
+    }
+
+    .choice-effect {
+      font-size: clamp(22px, 6vw, 34px);
+      font-weight: 950;
+      text-align: center;
+      overflow-wrap: anywhere;
+    }
+
+    .choice-description {
+      min-height: 42px;
+      font-size: 13px;
+      line-height: 1.5;
+      text-align: center;
+      overflow-wrap: anywhere;
+    }
+
+    /* 강제 선택: 기존 선택지를 유지하고 X만 겹쳐 표시 */
+    .choice.blocked {
+      cursor: not-allowed;
+    }
+
+    .choice.blocked .choice-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(8, 12, 22, 0.52);
+      pointer-events: none;
+    }
+
+    .choice-overlay-x {
+      font-size: clamp(100px, 24vw, 150px);
+      line-height: 1;
+      font-weight: 300;
+      color: white;
+      text-shadow: 0 4px 18px rgba(0, 0, 0, 0.4);
+    }
+
+    .game-bottom {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .stop-button, .secondary-button, .primary-button {
+      min-height: 46px;
+      padding: 0 22px;
+      border: 0;
+      border-radius: 12px;
+      font-weight: 800;
+    }
+
+    .stop-button {
+      background: #3a4357;
+      color: white;
+    }
+
+    .primary-button {
+      background: #4389ff;
+      color: white;
+    }
+
+    .secondary-button {
+      background: #30394d;
+      color: white;
+    }
+
+    .dialog-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(0, 0, 0, 0.72);
+    }
+
+    .dialog-backdrop.open {
+      display: flex;
+    }
+
+    .dialog {
+      width: 100%;
+      max-width: 390px;
+      max-height: 90dvh;
+      overflow-y: auto;
+      padding: 23px 19px;
+      border: 1px solid #3a4760;
+      border-radius: 22px;
+      background: #1b2334;
+      box-shadow: 0 20px 80px rgba(0, 0, 0, 0.35);
+    }
+
+    .dialog h2 {
+      margin: 0 0 10px;
+      font-size: 23px;
+      text-align: center;
+    }
+
+    .dialog-description {
+      margin: 0 0 20px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+      text-align: center;
+    }
+
+    .amount-input {
+      display: block;
+      width: 100%;
+      min-height: 55px;
+      margin: 10px 0;
+      padding: 12px;
+      border: 1px solid #475570;
+      border-radius: 12px;
+      outline: none;
+      background: #111827;
+      color: white;
+      font-size: 23px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .amount-input:focus {
+      border-color: #4389ff;
+    }
+
+    .message {
+      min-height: 24px;
+      margin: 10px 0;
+      color: #ff8589;
+      font-size: 13px;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    .dialog-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .dialog-actions.single {
+      grid-template-columns: 1fr;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 15px 0;
+      border-bottom: 1px solid #354056;
+    }
+
+    .summary-label {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .summary-value {
+      font-size: 18px;
+      font-weight: 850;
+      text-align: right;
+      overflow-wrap: anywhere;
+    }
+
+    .summary-total {
+      margin-top: 8px;
+      padding-top: 20px;
+      border-bottom: 0;
+    }
+
+    .summary-total .summary-label {
+      color: white;
+      font-size: 17px;
+      font-weight: 800;
+    }
+
+    .summary-total .summary-value {
+      font-size: 27px;
+    }
+
+    .positive {
+      color: var(--green);
+    }
+
+    .negative {
+      color: #ff777e;
+    }
+
+    .notice {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+      text-align: center;
     }
 
     @media (max-width: 360px) {
       .screen {
-        padding-left: 14px;
-        padding-right: 14px;
+        padding: 14px 11px;
       }
 
-      .info-card {
-        font-size: 13px;
+      .choice {
+        min-height: 235px;
+        padding: 14px 7px;
       }
 
-      .info-value {
-        font-size: 15px;
-      }
-
-      .main-menu {
-        gap: 11px;
-      }
-
-      .menu-button {
-        border-radius: 18px;
-        font-size: 19px;
-      }
-
-      .game-button-area {
-        gap: 10px;
-      }
-
-      .game-button {
-        border-radius: 19px;
+      .choice-description {
+        font-size: 12px;
       }
     }
 
     @media (min-width: 700px) {
       .screen {
-        max-width: 650px;
-        margin: 0 auto;
+        padding: 26px;
+      }
+
+      .choice {
+        min-height: 320px;
       }
     }
   </style>
 </head>
 
 <body>
-
-  <!-- =========================
-       메인 화면
-  ========================== -->
-  <main id="mainScreen" class="screen active">
-
+  <!-- 메인 화면 -->
+  <section id="mainScreen" class="screen active">
     <div class="top-info">
-      <div class="info-card">
-        <div class="info-label">리롤 횟수</div>
-        <div class="info-value">리롤: ?개</div>
+      <div class="info-box">
+        <span class="info-label">리롤</span>
+        <strong id="mainRerolls" class="info-value">0개</strong>
       </div>
-
-      <div class="info-card">
-        <div class="info-label">예산</div>
-        <div class="info-value">예산: ????원</div>
+      <div class="info-box">
+        <span class="info-label">예산</span>
+        <strong id="budgetDisplay" class="info-value">10,000원</strong>
       </div>
     </div>
 
-    <header class="app-heading">
-      <h1>메인 화면</h1>
-      <p>원하는 메뉴를 선택하세요.</p>
-    </header>
+    <main class="main-content">
+      <h1 class="app-title">리스크 게임</h1>
+      <p class="subtitle">선택의 결과를 감당할 수 있겠어?</p>
 
-    <section class="main-menu">
-
-      <button
-        type="button"
-        class="menu-button menu-shop"
-        id="shopButton"
-      >
-        <span class="menu-icon" aria-hidden="true">🏪</span>
-        상점
-      </button>
-
-      <button
-        type="button"
-        class="menu-button menu-game"
-        id="openGameButton"
-      >
-        <span class="menu-icon" aria-hidden="true">🎮</span>
-        게임
-      </button>
-
-      <button
-        type="button"
-        class="menu-button menu-settings"
-        id="settingsButton"
-      >
-        <span class="menu-icon" aria-hidden="true">⚙️</span>
-        설정
-      </button>
-
-      <button
-        type="button"
-        class="menu-button menu-money"
-        id="moneyButton"
-      >
-        <span class="menu-icon" aria-hidden="true">💰</span>
-        돈
-      </button>
-
-    </section>
-
-    <footer class="main-footer">
-      게임 앱
-    </footer>
-
-  </main>
-
-
-  <!-- =========================
-       게임 화면
-  ========================== -->
-  <section id="gameScreen" class="screen">
-
-    <div class="top-info">
-
-      <div class="info-card">
-        <div class="info-label">리롤 횟수</div>
-        <div class="info-value" id="gameRerollCount">
-          리롤: 0개
-        </div>
+      <div class="menu-grid">
+        <button class="menu-button" data-menu="shop">상점</button>
+        <button class="menu-button" id="gameMenuButton">게임</button>
+        <button class="menu-button" data-menu="settings">설정</button>
+        <button class="menu-button" data-menu="money">돈</button>
       </div>
-
-      <div class="info-card">
-        <div class="info-label">현재 소지금</div>
-        <div class="info-value" id="gameMoney">
-          0원
-        </div>
-      </div>
-
-    </div>
-
-    <div class="game-heading">
-      게임 화면
-    </div>
-
-    <div class="game-button-area">
-
-      <button
-        type="button"
-        class="game-button blue-button"
-        id="blueButton"
-      >
-        파란 버튼
-      </button>
-
-      <button
-        type="button"
-        class="game-button red-button"
-        id="redButton"
-      >
-        빨간 버튼
-      </button>
-
-    </div>
-
-    <button
-      type="button"
-      class="stop-button"
-      id="stopButton"
-    >
-      중지
-    </button>
-
+    </main>
   </section>
 
+  <!-- 게임 화면 -->
+  <section id="gameScreen" class="screen">
+    <div class="top-info">
+      <div class="info-box">
+        <span class="info-label">리롤</span>
+        <strong id="gameRerolls" class="info-value">0개</strong>
+      </div>
+      <div class="info-box">
+        <span class="info-label">현재 게임 금액</span>
+        <strong id="gameMoneyDisplay" class="info-value">0원</strong>
+      </div>
+    </div>
 
-  <!-- =========================
-       게임 금액 입력 창
-  ========================== -->
-  <div
-    class="modal-overlay"
-    id="amountModal"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="amountTitle"
-    aria-hidden="true"
-  >
+    <main class="game-layout">
+      <div id="turnDisplay" class="turn-label">1번째 선택</div>
 
-    <div class="modal">
+      <div class="choices">
+        <button id="blueButton" class="choice blue">
+          <span class="choice-color-name">파랑</span>
+          <span id="blueEffect" class="choice-effect">+50%</span>
+          <span id="blueDescription" class="choice-description">
+            현재 금액의 50% 추가
+          </span>
+          <span class="choice-overlay" hidden>
+            <span class="choice-overlay-x">×</span>
+          </span>
+        </button>
 
-      <h2 id="amountTitle">게임 금액 입력</h2>
+        <button id="redButton" class="choice red">
+          <span class="choice-color-name">빨강</span>
+          <span id="redEffect" class="choice-effect">+100%</span>
+          <span id="redDescription" class="choice-description">
+            다음 턴 빨강 강제 선택
+          </span>
+          <span class="choice-overlay" hidden>
+            <span class="choice-overlay-x">×</span>
+          </span>
+        </button>
+      </div>
 
-      <p class="modal-description">
-        게임에 사용할 금액을 입력하세요.
+      <div class="game-bottom">
+        <button id="stopButton" class="stop-button">중지</button>
+      </div>
+    </main>
+  </section>
+
+  <!-- 게임 금액 입력 창 -->
+  <div id="amountDialog" class="dialog-backdrop">
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="amountTitle">
+      <h2 id="amountTitle">게임 금액</h2>
+      <p class="dialog-description">
+        게임에 사용할 금액을 입력해.<br>
+        최소 1,000원 · 최대 5,000원<br>
+        1,000원 단위로 입력해야 해.
       </p>
 
-      <form id="amountForm" novalidate>
+      <input
+        id="amountInput"
+        class="amount-input"
+        type="number"
+        inputmode="numeric"
+        min="1000"
+        max="5000"
+        step="1000"
+        placeholder="예: 3000"
+        autocomplete="off"
+      >
 
-        <label
-          class="amount-label"
-          for="amountInput"
-        >
-          게임 금액
-        </label>
+      <div id="amountMessage" class="message" aria-live="polite"></div>
 
-        <div class="amount-input-wrap">
-          <input
-            type="number"
-            id="amountInput"
-            name="amount"
-            inputmode="numeric"
-            min="1000"
-            max="5000"
-            step="1000"
-            placeholder="금액 입력"
-            autocomplete="off"
-            required
-          >
-
-          <span class="won-label">원</span>
-        </div>
-
-        <div class="amount-rules">
-          <div>최소 금액: <strong>1,000원</strong></div>
-          <div>최대 금액: <strong>5,000원</strong></div>
-          <div>입력 단위: <strong>1,000원</strong></div>
-        </div>
-
-        <p
-          class="validation-message"
-          id="validationMessage"
-          aria-live="polite"
-        ></p>
-
-        <div class="modal-actions">
-
-          <button
-            type="submit"
-            class="action-button start-button"
-          >
-            시작
-          </button>
-
-          <button
-            type="button"
-            class="action-button cancel-button"
-            id="cancelButton"
-          >
-            취소
-          </button>
-
-        </div>
-
-      </form>
-
-    </div>
-
-  </div>
-
-
-  <!-- =========================
-       공통 안내 창
-  ========================== -->
-  <div
-    class="notice-overlay"
-    id="noticeOverlay"
-    role="dialog"
-    aria-modal="true"
-    aria-hidden="true"
-  >
-    <div class="notice-box">
-      <p id="noticeMessage"></p>
-      <button type="button" id="noticeConfirm">
-        확인
-      </button>
+      <div class="dialog-actions">
+        <button id="cancelAmountButton" class="secondary-button">취소</button>
+        <button id="startGameButton" class="primary-button">시작</button>
+      </div>
     </div>
   </div>
 
+  <!-- 게임 결과 창 -->
+  <div id="summaryDialog" class="dialog-backdrop">
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="summaryTitle">
+      <h2 id="summaryTitle">게임 결과</h2>
+      <p id="summaryReason" class="dialog-description">게임이 종료됐어.</p>
+
+      <div class="summary-row">
+        <span class="summary-label">게임금액</span>
+        <strong id="summaryStart" class="summary-value">0원</strong>
+      </div>
+
+      <div class="summary-row">
+        <span class="summary-label">이익/손해</span>
+        <strong id="summaryChange" class="summary-value">0원</strong>
+      </div>
+
+      <div class="summary-row summary-total">
+        <span class="summary-label">총액</span>
+        <strong id="summaryTotal" class="summary-value">0원</strong>
+      </div>
+
+      <p class="notice">
+        확인을 누르면 최종 금액이 메인 화면 예산에 반영돼.
+      </p>
+
+      <div class="dialog-actions single">
+        <button id="confirmSummaryButton" class="primary-button">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 아직 세부 규칙이 정해지지 않은 메뉴 -->
+  <div id="placeholderDialog" class="dialog-backdrop">
+    <div class="dialog" role="dialog" aria-modal="true">
+      <h2 id="placeholderTitle">메뉴</h2>
+      <p id="placeholderDescription" class="dialog-description">
+        이 기능은 아직 준비 중이야.
+      </p>
+      <div class="dialog-actions single">
+        <button id="closePlaceholderButton" class="primary-button">확인</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     "use strict";
 
-    /* =================================
-       화면 요소
-    ================================= */
+    // =========================
+    // 게임 데이터
+    // =========================
 
-    const mainScreen = document.getElementById("mainScreen");
-    const gameScreen = document.getElementById("gameScreen");
+    const state = {
+      budget: 10000,
+      mainRerolls: 0,
 
-    const amountModal = document.getElementById("amountModal");
-    const amountForm = document.getElementById("amountForm");
-    const amountInput = document.getElementById("amountInput");
-    const validationMessage =
-      document.getElementById("validationMessage");
+      startingMoney: 0,
+      gameMoney: 0,
+      gameRerolls: 0,
+      turn: 1,
 
-    const gameMoney = document.getElementById("gameMoney");
-    const gameRerollCount =
-      document.getElementById("gameRerollCount");
+      // null, "blue", "red"
+      forcedColor: null,
 
-    const noticeOverlay =
-      document.getElementById("noticeOverlay");
-    const noticeMessage =
-      document.getElementById("noticeMessage");
-    const noticeConfirm =
-      document.getElementById("noticeConfirm");
+      // 종료한 게임의 결과를 확인하기 전까지 보관
+      pendingFinalMoney: null,
+      gameActive: false,
 
-
-    /* =================================
-       게임 상태
-    ================================= */
-
-    // 게임을 시작할 때 입력한 금액으로 설정한다.
-    let currentMoney = 0;
-
-    // 새 게임을 시작하면 0개로 초기화한다.
-    let rerollCount = 0;
-
-
-    /* =================================
-       공통 기능
-    ================================= */
-
-    function formatMoney(amount) {
-      return amount.toLocaleString("ko-KR") + "원";
-    }
-
-    function showScreen(screen) {
-      mainScreen.classList.remove("active");
-      gameScreen.classList.remove("active");
-
-      screen.classList.add("active");
-
-      window.scrollTo({
-        top: 0,
-        behavior: "auto"
-      });
-    }
-
-    function showNotice(message) {
-      noticeMessage.textContent = message;
-
-      noticeOverlay.classList.add("open");
-      noticeOverlay.setAttribute("aria-hidden", "false");
-
-      noticeConfirm.focus();
-    }
-
-    function closeNotice() {
-      noticeOverlay.classList.remove("open");
-      noticeOverlay.setAttribute("aria-hidden", "true");
-    }
-
-
-    /* =================================
-       금액 입력 창
-    ================================= */
-
-    function openAmountModal() {
-      amountInput.value = "";
-      validationMessage.textContent = "";
-      validationMessage.classList.remove("success");
-
-      amountModal.classList.add("open");
-      amountModal.setAttribute("aria-hidden", "false");
-
-      // 키보드가 열리도록 잠시 뒤 입력창에 초점을 맞춘다.
-      window.setTimeout(function () {
-        amountInput.focus();
-      }, 100);
-    }
-
-    function closeAmountModal() {
-      amountModal.classList.remove("open");
-      amountModal.setAttribute("aria-hidden", "true");
-    }
-
-    function validateAmount() {
-      const rawValue = amountInput.value.trim();
-
-      if (rawValue === "") {
-        return {
-          valid: false,
-          message: "게임 금액을 입력해 주세요."
-        };
+      choices: {
+        blue: null,
+        red: null
       }
+    };
 
+    const $ = (id) => document.getElementById(id);
+
+    const screens = {
+      main: $("mainScreen"),
+      game: $("gameScreen")
+    };
+
+    const amountDialog = $("amountDialog");
+    const summaryDialog = $("summaryDialog");
+    const placeholderDialog = $("placeholderDialog");
+
+    const numberFormat = new Intl.NumberFormat("ko-KR");
+
+    function won(amount) {
+      return numberFormat.format(amount) + "원";
+    }
+
+    function signedWon(amount) {
+      if (amount > 0) return "+" + won(amount);
+      if (amount < 0) return "-" + won(Math.abs(amount));
+      return "0원";
+    }
+
+    function showScreen(name) {
+      Object.values(screens).forEach((screen) => {
+        screen.classList.remove("active");
+      });
+
+      screens[name].classList.add("active");
+    }
+
+    function updateMainDisplay() {
+      $("mainRerolls").textContent = state.mainRerolls + "개";
+      $("budgetDisplay").textContent = won(state.budget);
+    }
+
+    function updateGameDisplay() {
+      $("gameRerolls").textContent = state.gameRerolls + "개";
+      $("gameMoneyDisplay").textContent = won(state.gameMoney);
+      $("turnDisplay").textContent = state.turn + "번째 선택";
+    }
+
+    function openAmountDialog() {
+      $("amountInput").value = "";
+      $("amountMessage").textContent = "";
+      amountDialog.classList.add("open");
+
+      setTimeout(() => $("amountInput").focus(), 50);
+    }
+
+    function closeAmountDialog() {
+      amountDialog.classList.remove("open");
+    }
+
+    // =========================
+    // 게임 시작
+    // =========================
+
+    function startGame() {
+      const rawValue = $("amountInput").value.trim();
       const amount = Number(rawValue);
 
-      if (!Number.isSafeInteger(amount)) {
-        return {
-          valid: false,
-          message: "금액은 정수로 입력해 주세요."
-        };
-      }
-
-      if (amount < 1000) {
-        return {
-          valid: false,
-          message: "최소 금액은 1,000원입니다."
-        };
-      }
-
-      if (amount > 5000) {
-        return {
-          valid: false,
-          message: "최대 금액은 5,000원입니다."
-        };
-      }
-
-      if (amount % 1000 !== 0) {
-        return {
-          valid: false,
-          message: "1,000원 단위로 입력해 주세요."
-        };
-      }
-
-      return {
-        valid: true,
-        amount: amount,
-        message: "금액을 확인했습니다."
-      };
-    }
-
-    amountInput.addEventListener("input", function () {
-      validationMessage.textContent = "";
-      validationMessage.classList.remove("success");
-    });
-
-    amountForm.addEventListener("submit", function (event) {
-      event.preventDefault();
-
-      const result = validateAmount();
-
-      if (!result.valid) {
-        validationMessage.textContent = result.message;
-        validationMessage.classList.remove("success");
-        amountInput.focus();
+      if (
+        rawValue === "" ||
+        !Number.isFinite(amount) ||
+        !Number.isInteger(amount) ||
+        amount < 1000 ||
+        amount > 5000 ||
+        amount % 1000 !== 0
+      ) {
+        $("amountMessage").textContent =
+          "1,000원부터 5,000원까지 1,000원 단위로 입력해.";
         return;
       }
 
-      startGame(result.amount);
-    });
-
-
-    /* =================================
-       게임 시작 및 종료
-    ================================= */
-
-    function startGame(amount) {
-      // 입력 금액을 새 게임의 초기 소지금으로 설정한다.
-      currentMoney = amount;
-
-      // 새 게임 시작 시 리롤 횟수를 초기화한다.
-      rerollCount = 0;
-
-      updateGameInfo();
-
-      closeAmountModal();
-      showScreen(gameScreen);
-    }
-
-    function updateGameInfo() {
-      gameMoney.textContent = formatMoney(currentMoney);
-      gameRerollCount.textContent =
-        "리롤: " + rerollCount + "개";
-    }
-
-
-    /* =================================
-       메인 화면 버튼
-    ================================= */
-
-    document
-      .getElementById("openGameButton")
-      .addEventListener("click", openAmountModal);
-
-    document
-      .getElementById("cancelButton")
-      .addEventListener("click", function () {
-        closeAmountModal();
-        showScreen(mainScreen);
-      });
-
-    document
-      .getElementById("shopButton")
-      .addEventListener("click", function () {
-        showNotice("상점 기능은 아직 정해지지 않았습니다.");
-      });
-
-    document
-      .getElementById("settingsButton")
-      .addEventListener("click", function () {
-        showNotice("설정 기능은 아직 정해지지 않았습니다.");
-      });
-
-    document
-      .getElementById("moneyButton")
-      .addEventListener("click", function () {
-        showNotice("돈 기능은 아직 정해지지 않았습니다.");
-      });
-
-
-    /* =================================
-       게임 화면 버튼
-       실제 기능은 추후 정의
-    ================================= */
-
-    document
-      .getElementById("blueButton")
-      .addEventListener("click", function () {
-        showNotice("파란 버튼의 기능은 아직 정해지지 않았습니다.");
-      });
-
-    document
-      .getElementById("redButton")
-      .addEventListener("click", function () {
-        showNotice("빨간 버튼의 기능은 아직 정해지지 않았습니다.");
-      });
-
-    document
-      .getElementById("stopButton")
-      .addEventListener("click", function () {
-        showNotice("중지 버튼의 작동 방식은 아직 정해지지 않았습니다.");
-      });
-
-
-    /* =================================
-       안내 창
-    ================================= */
-
-    noticeConfirm.addEventListener("click", closeNotice);
-
-    noticeOverlay.addEventListener("click", function (event) {
-      if (event.target === noticeOverlay) {
-        closeNotice();
+      if (amount > state.budget) {
+        $("amountMessage").textContent =
+          "예산이 부족해. 현재 예산은 " + won(state.budget) + "이야.";
+        return;
       }
+
+      // 예산에서 시작 금액을 미리 차감한다.
+      // 결과 확인 시 최종 게임 금액을 다시 예산에 더한다.
+      state.budget -= amount;
+
+      state.startingMoney = amount;
+      state.gameMoney = amount;
+      state.gameRerolls = 0;
+      state.turn = 1;
+      state.forcedColor = null;
+      state.pendingFinalMoney = null;
+      state.gameActive = true;
+
+      closeAmountDialog();
+      updateMainDisplay();
+      updateGameDisplay();
+      showScreen("game");
+
+      generateChoices();
+    }
+
+    // =========================
+    // 랜덤 선택지
+    // =========================
+
+    /*
+      각 선택지는 고유 ID를 가진다.
+      파랑과 빨강은 ID가 중복되지 않게 생성한다.
+
+      gain: 현재 금액 증가
+      loss: 현재 금액 감소
+      rerollGain: 리롤 증가
+      gainWithForcedColor: 금액 증가 후 다음 턴 특정 색 강제
+      gainWithRerollCost: 금액 증가 후 리롤 차감
+    */
+
+    const choicePool = [
+      {
+        id: "gain30",
+        type: "gain",
+        amount: 30,
+        effect: "+30%",
+        description: "현재 금액의 30% 추가"
+      },
+      {
+        id: "gain50",
+        type: "gain",
+        amount: 50,
+        effect: "+50%",
+        description: "현재 금액의 50% 추가"
+      },
+      {
+        id: "gain75",
+        type: "gain",
+        amount: 75,
+        effect: "+75%",
+        description: "현재 금액의 75% 추가"
+      },
+      {
+        id: "gain100",
+        type: "gain",
+        amount: 100,
+        effect: "+100%",
+        description: "현재 금액의 100% 추가"
+      },
+      {
+        id: "loss25",
+        type: "loss",
+        amount: 25,
+        effect: "-25%",
+        description: "현재 금액의 25% 감소"
+      },
+      {
+        id: "loss50",
+        type: "loss",
+        amount: 50,
+        effect: "-50%",
+        description: "현재 금액의 50% 감소"
+      },
+      {
+        id: "rerollGain",
+        type: "rerollGain",
+        amount: 3,
+        effect: "리롤 +3",
+        description: "리롤 3개 획득"
+      },
+      {
+        id: "gain100ForceRed",
+        type: "gainWithForcedColor",
+        amount: 100,
+        color: "red",
+        effect: "+100%",
+        description: "다음 턴 빨강 강제 선택"
+      },
+      {
+        id: "gain100ForceBlue",
+        type: "gainWithForcedColor",
+        amount: 100,
+        color: "blue",
+        effect: "+100%",
+        description: "다음 턴 파랑 강제 선택"
+      },
+      {
+        id: "gain200RerollCost",
+        type: "gainWithRerollCost",
+        amount: 200,
+        rerollCost: 3,
+        effect: "+200%",
+        description: "리롤 3개 차감"
+      },
+      {
+        id: "gain150ForceRed",
+        type: "gainWithForcedColor",
+        amount: 150,
+        color: "red",
+        effect: "+150%",
+        description: "다음 턴 빨강 강제 선택"
+      },
+      {
+        id: "gain150ForceBlue",
+        type: "gainWithForcedColor",
+        amount: 150,
+        color: "blue",
+        effect: "+150%",
+        description: "다음 턴 파랑 강제 선택"
+      }
+    ];
+
+    function randomItem(items) {
+      return items[Math.floor(Math.random() * items.length)];
+    }
+
+    function availableChoices() {
+      return choicePool.filter((choice) => {
+        if (
+          choice.type === "gainWithRerollCost" &&
+          state.gameRerolls < choice.rerollCost
+        ) {
+          return false;
+        }
+
+        return true;
+      });
+    }
+
+    function generateChoices() {
+      if (!state.gameActive || state.gameMoney <= 0) return;
+
+      const pool = availableChoices();
+
+      if (pool.length < 2) {
+        endGame("선택지가 부족해 게임이 종료됐어.");
+        return;
+      }
+
+      const blue = randomItem(pool);
+
+      const redPool = pool.filter((choice) => choice.id !== blue.id);
+      const red = randomItem(redPool);
+
+      state.choices.blue = blue;
+      state.choices.red = red;
+
+      renderChoice("blue", blue);
+      renderChoice("red", red);
+
+      updateForcedSelection();
+      updateGameDisplay();
+    }
+
+    function renderChoice(color, choice) {
+      $(color + "Effect").textContent = choice.effect;
+      $(color + "Description").textContent = choice.description;
+    }
+
+    // =========================
+    // 강제 선택 표시
+    // =========================
+
+    function updateForcedSelection() {
+      ["blue", "red"].forEach((color) => {
+        const button = $(color + "Button");
+        const overlay = button.querySelector(".choice-overlay");
+        const blocked =
+          state.forcedColor !== null &&
+          state.forcedColor !== color;
+
+        button.disabled = blocked;
+        button.classList.toggle("blocked", blocked);
+        overlay.hidden = !blocked;
+      });
+    }
+
+    // =========================
+    // 선택지 실행
+    // =========================
+
+    function applyPercentChange(percent, isLoss) {
+      if (isLoss && state.gameMoney <= 1000) {
+        // 잔액이 1,000원 이하라면 감소 패널티로 즉시 0원
+        state.gameMoney = 0;
+        return;
+      }
+
+      const difference = Math.round(
+        state.gameMoney * percent / 100
+      );
+
+      if (isLoss) {
+        state.gameMoney = Math.max(
+          0,
+          state.gameMoney - difference
+        );
+      } else {
+        state.gameMoney += difference;
+      }
+    }
+
+    function chooseColor(color) {
+      if (!state.gameActive) return;
+
+      // 강제 선택된 반대 색상은 버튼 자체가 비활성화되어 있다.
+      // 이 검사는 추가적인 안전장치다.
+      if (
+        state.forcedColor !== null &&
+        state.forcedColor !== color
+      ) {
+        return;
+      }
+
+      const choice = state.choices[color];
+      if (!choice) return;
+
+      // 이번 턴의 강제 조건은 이번 선택으로 소모된다.
+      state.forcedColor = null;
+
+      switch (choice.type) {
+        case "gain":
+          applyPercentChange(choice.amount, false);
+          break;
+
+        case "loss":
+          applyPercentChange(choice.amount, true);
+          break;
+
+        case "rerollGain":
+          state.gameRerolls += choice.amount;
+          break;
+
+        case "gainWithForcedColor":
+          applyPercentChange(choice.amount, false);
+
+          if (state.gameMoney > 0) {
+            state.forcedColor = choice.color;
+          }
+          break;
+
+        case "gainWithRerollCost":
+          // 생성 단계에서 리롤 보유량을 검사하지만,
+          // 실행 직전에도 다시 검사한다.
+          if (state.gameRerolls < choice.rerollCost) {
+            generateChoices();
+            return;
+          }
+
+          applyPercentChange(choice.amount, false);
+          state.gameRerolls -= choice.rerollCost;
+          break;
+
+        default:
+          return;
+      }
+
+      if (state.gameMoney <= 0) {
+        state.gameMoney = 0;
+        updateGameDisplay();
+        endGame("현재 게임 금액이 0원이 되어 게임이 종료됐어.");
+        return;
+      }
+
+      state.turn += 1;
+      updateGameDisplay();
+      generateChoices();
+    }
+
+    $("blueButton").addEventListener("click", () => {
+      chooseColor("blue");
     });
 
-    // 금액 입력 창의 바깥을 눌러도 임의로 닫히지 않도록 한다.
-    // 취소 버튼을 통해 메인 화면으로 돌아간다.
+    $("redButton").addEventListener("click", () => {
+      chooseColor("red");
+    });
 
+    // =========================
+    // 게임 종료 및 합계
+    // =========================
+
+    function endGame(reason) {
+      if (!state.gameActive) return;
+
+      state.gameActive = false;
+      state.pendingFinalMoney = state.gameMoney;
+
+      const start = state.startingMoney;
+      const finalMoney = state.pendingFinalMoney;
+      const change = finalMoney - start;
+
+      $("summaryReason").textContent = reason;
+      $("summaryStart").textContent = won(start);
+
+      const changeElement = $("summaryChange");
+      changeElement.textContent = signedWon(change);
+      changeElement.classList.toggle("positive", change > 0);
+      changeElement.classList.toggle("negative", change < 0);
+
+      $("summaryTotal").textContent = won(finalMoney);
+
+      summaryDialog.classList.add("open");
+    }
+
+    $("stopButton").addEventListener("click", () => {
+      endGame("중지 버튼을 눌러 게임을 종료했어.");
+    });
+
+    $("confirmSummaryButton").addEventListener("click", () => {
+      if (state.pendingFinalMoney === null) return;
+
+      // 시작할 때 차감한 게임 시작금에
+      // 게임 종료 시 남은 금액을 더한다.
+      state.budget += state.pendingFinalMoney;
+
+      state.pendingFinalMoney = null;
+      state.forcedColor = null;
+      state.choices.blue = null;
+      state.choices.red = null;
+
+      summaryDialog.classList.remove("open");
+
+      updateMainDisplay();
+      showScreen("main");
+    });
+
+    // =========================
+    // 메인 메뉴
+    // =========================
+
+    $("gameMenuButton").addEventListener("click", () => {
+      openAmountDialog();
+    });
+
+    $("startGameButton").addEventListener("click", startGame);
+
+    $("cancelAmountButton").addEventListener("click", () => {
+      closeAmountDialog();
+    });
+
+    $("amountInput").addEventListener("keydown", (event) => {
+      if (event.key === "Enter") startGame();
+    });
+
+    $("amountInput").addEventListener("input", () => {
+      $("amountMessage").textContent = "";
+    });
+
+    const placeholderMenus = {
+      shop: {
+        title: "상점",
+        description: "상점 기능은 아직 설계되지 않았어."
+      },
+      settings: {
+        title: "설정",
+        description: "설정 기능은 아직 설계되지 않았어."
+      },
+      money: {
+        title: "돈",
+        description: "돈 메뉴의 기능은 아직 설계되지 않았어."
+      }
+    };
+
+    document.querySelectorAll("[data-menu]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const item = placeholderMenus[button.dataset.menu];
+
+        $("placeholderTitle").textContent = item.title;
+        $("placeholderDescription").textContent = item.description;
+
+        placeholderDialog.classList.add("open");
+      });
+    });
+
+    $("closePlaceholderButton").addEventListener("click", () => {
+      placeholderDialog.classList.remove("open");
+    });
+
+    // 초기 표시
+    updateMainDisplay();
+    updateGameDisplay();
   </script>
-
 </body>
 </html>
