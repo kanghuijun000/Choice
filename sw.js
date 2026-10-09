@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "risk-game-cache-v5";
+const CACHE_NAME = "risk-game-cache-v6";
 
 const APP_FILES = [
   "./",
@@ -23,7 +23,10 @@ self.addEventListener("activate", event => {
     caches.keys()
       .then(keys => Promise.all(
         keys
-          .filter(key => key.startsWith("risk-game-cache-") && key !== CACHE_NAME)
+          .filter(key =>
+            key.startsWith("risk-game-cache-") &&
+            key !== CACHE_NAME
+          )
           .map(key => caches.delete(key))
       ))
       .then(() => self.clients.claim())
@@ -36,14 +39,12 @@ self.addEventListener("fetch", event => {
   if (request.method !== "GET") return;
 
   const url = new URL(request.url);
-
-  // 다른 사이트의 요청은 가로채지 않음
   if (url.origin !== self.location.origin) return;
 
   event.respondWith(
     fetch(request, { cache: "no-cache" })
       .then(response => {
-        if (response && response.ok && response.type === "basic") {
+        if (response.ok && response.type === "basic") {
           const copy = response.clone();
 
           caches.open(CACHE_NAME).then(cache => {
@@ -55,18 +56,20 @@ self.addEventListener("fetch", event => {
       })
       .catch(async () => {
         const cached = await caches.match(request, { ignoreSearch: true });
-
         if (cached) return cached;
 
         if (request.mode === "navigate") {
-          const fallback = await caches.match("./index.html");
-          if (fallback) return fallback;
+          const page = await caches.match("./index.html");
+          if (page) return page;
         }
 
-        return new Response("오프라인 상태입니다. 인터넷 연결 후 다시 시도해 주세요.", {
-          status: 503,
-          headers: { "Content-Type": "text/plain; charset=utf-8" }
-        });
+        return new Response(
+          "오프라인 상태입니다. 인터넷 연결 후 다시 시도해 주세요.",
+          {
+            status: 503,
+            headers: { "Content-Type": "text/plain; charset=utf-8" }
+          }
+        );
       })
   );
 });
