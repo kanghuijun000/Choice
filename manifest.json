@@ -1,0 +1,13 @@
+{
+  "id": "./",
+  "name": "리스크 게임",
+  "short_name": "리스크 게임",
+  "description": "선택과 위험을 감수하며 돈을 관리하는 게임",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b1020",
+  "theme_color": "#111827",
+  "lang": "ko"
+}
