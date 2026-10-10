@@ -843,10 +843,19 @@ function showScreen(id) {
 }
 
 $("newAccountButton").addEventListener("click", () => {
-  // 신규 계정 흐름을 시작하되 게임 진행 데이터는 초기화하지 않습니다.
+  // 신규 계정은 이전 계정의 로컬 진행 데이터·프로필을 이어받지 않습니다.
+  // 서버의 기존 계정과 데이터는 삭제하지 않고, 이 기기의 로컬 작업 공간만 새로 시작합니다.
   localStorage.removeItem("risk-game-account-displaced-v1");
   localStorage.removeItem("risk-game-recovery-enabled-v1");
+  localStorage.removeItem(PROFILE_STORAGE_KEY);
   profile = null;
+  state = defaultState();
+  saveState();
+  updateAll();
+  $("homeProfileName").textContent = "이름";
+  $("homeProfileCode").textContent = "#000";
+  $("profileDisplayName").textContent = "이름";
+  $("profileDisplayCode").textContent = "#000";
   $("profileNameInput").value = "";
   showScreen("homeScreen");
   openProfileEditor(true);
