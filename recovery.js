@@ -212,6 +212,68 @@
     }
   }
 
+  window.riskGameDeleteAccount = deleteCurrentAccount;
+
+  let accountDeletionInProgress = false;
+
+  async function deleteCurrentAccount() {
+    if (accountDeletionInProgress) return;
+    const button = $("deleteAccountButton");
+    const status = $("deleteAccountMessage");
+    if (!client) {
+      if (status) {
+        status.textContent = "온라인 계정 서버에 연결되지 않았습니다. 인터넷 연결을 확인한 뒤 다시 시도하세요.";
+        status.classList.add("recovery-error");
+      }
+      return;
+    }
+
+    accountDeletionInProgress = true;
+    if (button) button.disabled = true;
+    if (status) {
+      status.textContent = "계정과 관련 데이터를 영구 삭제하고 있습니다. 화면을 닫지 마세요.";
+      status.classList.remove("recovery-error");
+    }
+
+    try {
+      await invoke("delete_account", { deviceId: getDeviceId() });
+      deviceVerified = false;
+      if (saveTimer !== null) {
+        clearTimeout(saveTimer);
+        saveTimer = null;
+      }
+
+      try { await client.auth.signOut({ scope: "local" }); } catch {}
+
+      const keysToRemove = [];
+      const projectUrl = String(config.url || window.RISK_GAME_SUPABASE_CONFIG?.url || "");
+      let projectRef = "";
+      try { projectRef = new URL(projectUrl).hostname.split(".")[0]; } catch {}
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key) continue;
+        if (key.startsWith("risk-game-") ||
+            ["riskGameState", "risk-game", "riskGame", "gameState"].includes(key) ||
+            (projectRef && key.startsWith("sb-" + projectRef + "-"))) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+
+      window.riskGameFinishAccountDeletion?.();
+    } catch (error) {
+      const detail = String(error?.message || "계정 삭제에 실패했습니다.");
+      if (status) {
+        status.textContent = detail + " 계정은 삭제되지 않았을 수 있으므로 화면을 확인한 뒤 다시 시도하세요.";
+        status.classList.add("recovery-error");
+      }
+      accountDeletionInProgress = false;
+      if (button) button.disabled = false;
+    }
+  }
+
+  window.riskGameDeleteAccount = deleteCurrentAccount;
+
   async function saveCloudState() {
     if (!client || !deviceVerified || localStorage.getItem(RECOVERY_ENABLED_KEY) !== "true" ||
         typeof window.riskGameGetState !== "function") return;
