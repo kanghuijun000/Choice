@@ -1641,6 +1641,14 @@ $("buyBankRateButton").addEventListener("click", () => {
 ========================= */
 
 function syncBankClock(now = Date.now()) {
+  // 은행 원금이 없으면 이자 타이머를 멈추고 진행 시간을 초기화합니다.
+  if (state.bankPrincipal <= 0) {
+    state.bankElapsedMs = 0;
+    lastActiveTick =
+      document.visibilityState === "visible" ? now : null;
+    return;
+  }
+
   if (lastActiveTick === null) return;
 
   const elapsed = Math.max(0, now - lastActiveTick);
@@ -1674,8 +1682,13 @@ function updateBank() {
     `${moneyText(state.bankPrincipal)} / ${moneyText(state.bankDepositLimit)}`;
   $("bankInterestDisplay").textContent = moneyText(state.bankInterest);
   $("bankTotalDisplay").textContent = moneyText(addMoney(state.bankPrincipal, state.bankInterest));
-  const secondsLeft = Math.ceil(Math.max(0, BANK_MINUTE_MS - state.bankElapsedMs) / 1000);
-  $("bankNextInterestDisplay").textContent = `다음 이자까지 ${clockText(secondsLeft)}`;
+  if (state.bankPrincipal <= 0) {
+    state.bankElapsedMs = 0;
+    $("bankNextInterestDisplay").textContent = "입금하면 시작";
+  } else {
+    const secondsLeft = Math.ceil(Math.max(0, BANK_MINUTE_MS - state.bankElapsedMs) / 1000);
+    $("bankNextInterestDisplay").textContent = `다음 이자까지 ${clockText(secondsLeft)}`;
+  }
   $("bankRateDescription").textContent = `현재 이자율은 분당 ${state.bankRate}% 단리입니다. 앱이 활성화된 시간만 계산하며, 1분이 지날 때 이자가 반영됩니다. 원금이 너무 적으면 계산된 이자가 1원 미만으로 처리되어 표시되지 않을 수 있습니다. 입금 한도는 원금 기준이며 누적 이자는 한도에 포함되지 않습니다.`;
 }
 
