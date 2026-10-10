@@ -428,6 +428,7 @@ function defaultState() {
     rerolls: 5,
     rerollCap: 5,
     bankPrincipal: 0,
+    bankDepositLimit: 5000,
     bankInterest: 0,
     bankElapsedMs: 0,
     bankRate: INITIAL_BANK_RATE,
@@ -463,6 +464,11 @@ function normalizeState(raw) {
     rerolls: 0,
     rerollCap: 5,
     bankPrincipal: clampMoney(raw.bankPrincipal ?? raw.bankMoney ?? 0),
+    bankDepositLimit: Math.max(
+      5000,
+      clampMoney(raw.bankDepositLimit ?? 5000),
+      clampMoney(raw.bankPrincipal ?? raw.bankMoney ?? 0)
+    ),
     bankInterest: clampMoney(raw.bankInterest ?? raw.interest ?? 0),
     bankRate: Math.max(
       1,
@@ -1305,6 +1311,16 @@ function capUpgradeCost() {
   return 5000 + ((state.rerollCap - 5) / 5) * 2000;
 }
 
+function bankDepositLimitUpgrade() {
+  const increment = 5000;
+  const nextLimit = state.bankDepositLimit + increment;
+  return {
+    increment,
+    nextLimit,
+    cost: state.bankDepositLimit
+  };
+}
+
 function updateShop() {
   const upgrade = limitUpgrade();
   const rateCost = bankRateUpgradeCost();
@@ -1313,6 +1329,8 @@ function updateShop() {
   const capMaxed = state.rerollCap >= 50;
   const threeChoiceMaxed = state.threeChoiceUnlocked;
   const rateMaxed = state.bankRate >= 10;
+  const depositUpgrade = bankDepositLimitUpgrade();
+  const depositLimitMaxed = !Number.isFinite(depositUpgrade.nextLimit);
 
   $("shopBudgetDisplay").textContent = moneyText(state.budget);
   $("shopLimitDisplay").textContent = moneyText(state.gameLimit);
@@ -1348,6 +1366,21 @@ function updateShop() {
   $("buyBankRateButton").setAttribute("aria-disabled", String(rateMaxed || state.budget < rateCost));
   $("buyBankRateButton").querySelector("small").textContent =
     rateMaxed ? "최대" : "구매";
+
+  $("shopBankDepositLimitDisplay").textContent = moneyText(state.bankDepositLimit);
+  $("bankDepositLimitPrice").textContent = depositLimitMaxed
+    ? "최대"
+    : moneyText(depositUpgrade.cost);
+  $("buyBankDepositLimitButton").classList.toggle(
+    "unavailable",
+    depositLimitMaxed || state.budget < depositUpgrade.cost
+  );
+  $("buyBankDepositLimitButton").setAttribute(
+    "aria-disabled",
+    String(depositLimitMaxed || state.budget < depositUpgrade.cost)
+  );
+  $("buyBankDepositLimitButton").querySelector("small").textContent =
+    depositLimitMaxed ? "최대" : "구매";
 }
 
 let shopMessageTimer = null;
@@ -1468,6 +1501,32 @@ $("buyThreeChoiceButton").addEventListener("click", () => {
   });
 });
 
+$("buyBankDepositLimitButton").addEventListener("click", () => {
+  const upgrade = bankDepositLimitUpgrade();
+  if (!Number.isFinite(upgrade.nextLimit)) {
+    return showPurchaseNotice("최대치 도달");
+  }
+  if (state.budget < upgrade.cost) return showPurchaseNotice("예산 부족");
+
+  askConfirm(
+    `은행 입금 한도를 ${moneyText(state.bankDepositLimit)}에서 ${moneyText(upgrade.nextLimit)}로 올립니다. 비용은 ${moneyText(upgrade.cost)}입니다. 정말 구매하시겠습니까?`,
+    () => {
+      const current = bankDepositLimitUpgrade();
+      if (!Number.isFinite(current.nextLimit)) {
+        return showPurchaseNotice("최대치 도달");
+      }
+      if (state.budget < current.cost) return showPurchaseNotice("예산 부족");
+
+      state.budget -= current.cost;
+      state.bankDepositLimit = current.nextLimit;
+      shopMessage(`은행 입금 한도가 ${moneyText(state.bankDepositLimit)}로 증가했습니다.`);
+      saveState();
+      updateAll();
+    },
+    "입금 한도 업그레이드"
+  );
+});
+
 $("buyBankRateButton").addEventListener("click", () => {
   if (state.bankRate >= 10) return showPurchaseNotice("최대치 도달");
   const cost = bankRateUpgradeCost();
@@ -1523,11 +1582,13 @@ function bankRateUpgradeCost() {
 
 function updateBank() {
   $("bankPrincipalDisplay").textContent = moneyText(state.bankPrincipal);
+  $("bankDepositLimitDisplay").textContent =
+    `${moneyText(state.bankPrincipal)} / ${moneyText(state.bankDepositLimit)}`;
   $("bankInterestDisplay").textContent = moneyText(state.bankInterest);
   $("bankTotalDisplay").textContent = moneyText(addMoney(state.bankPrincipal, state.bankInterest));
   const secondsLeft = Math.ceil(Math.max(0, BANK_MINUTE_MS - state.bankElapsedMs) / 1000);
   $("bankNextInterestDisplay").textContent = `다음 이자까지 ${clockText(secondsLeft)}`;
-  $("bankRateDescription").textContent = `현재 이자율은 분당 ${state.bankRate}% 단리입니다. 앱이 활성화된 시간만 계산하며, 1분이 지날 때 이자가 반영됩니다. 원금이 너무 적으면 계산된 이자가 1원 미만으로 처리되어 표시되지 않을 수 있습니다.`;
+  $("bankRateDescription").textContent = `현재 이자율은 분당 ${state.bankRate}% 단리입니다. 앱이 활성화된 시간만 계산하며, 1분이 지날 때 이자가 반영됩니다. 원금이 너무 적으면 계산된 이자가 1원 미만으로 처리되어 표시되지 않을 수 있습니다. 입금 한도는 원금 기준이며 누적 이자는 한도에 포함되지 않습니다.`;
 }
 
 document.addEventListener("visibilitychange", () => {
@@ -1577,8 +1638,12 @@ function openMoneyModal(mode) {
   if (mode === "deposit") {
     $("modalTitle").textContent = "입금";
 
+    const remainingDepositCapacity = Math.max(
+      0,
+      state.bankDepositLimit - state.bankPrincipal
+    );
     $("modalDescription").textContent =
-      `입금 가능 금액 ${moneyText(state.budget)}`;
+      `보유 예산 ${moneyText(state.budget)} · 입금 가능 한도 ${moneyText(remainingDepositCapacity)} (현재 한도 ${moneyText(state.bankDepositLimit)})`;
 
     $("moneyAmount").min = "1";
   } else {
@@ -1637,6 +1702,16 @@ $("confirmMoneyButton").addEventListener("click", () => {
   if (moneyModalMode === "deposit") {
     if (amount > state.budget) {
       $("modalError").textContent = "보유 예산보다 많이 입금할 수 없습니다.";
+      return;
+    }
+
+    const remainingDepositCapacity = Math.max(
+      0,
+      state.bankDepositLimit - state.bankPrincipal
+    );
+    if (amount > remainingDepositCapacity) {
+      $("modalError").textContent =
+        `은행 입금 한도를 초과합니다. 현재 입금 가능 금액: ${moneyText(remainingDepositCapacity)}`;
       return;
     }
 
