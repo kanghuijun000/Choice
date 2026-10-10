@@ -417,10 +417,9 @@
     if (!window.confirm(friendName + " 님을 친구 목록에서 삭제할까요?")) return;
     setBusy(true);
     try {
-      const { error } = await client.from("user_friends")
-        .delete()
-        .eq("user_id", currentUser.id)
-        .eq("friend_id", friendId);
+      const { error } = await client.rpc("remove_risk_game_friend", {
+        p_friend_id: friendId
+      });
       if (error) throw error;
       await loadFriends();
       setMessage(friendName + " 님을 친구 목록에서 삭제했습니다.");
@@ -478,9 +477,11 @@
     loadRequests().catch(error => console.error("친구 요청 불러오기 실패:", error));
     window.setInterval(() => {
       if (currentUser) {
+        // 상대 계정의 수락/삭제 결과가 화면에 자동 반영되도록 친구 목록도 주기적으로 동기화합니다.
+        loadFriends().catch(error => console.error("친구 목록 자동 새로고침 실패:", error));
         loadRequests().catch(error => console.error("친구 요청 새로고침 실패:", error));
       }
-    }, 15000);
+    }, 5000);
 
     if (!configured) {
       $("friendMyCode").textContent = "연결 설정 확인 필요";
