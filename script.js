@@ -955,7 +955,24 @@ function renderGameHistory() {
     const top = document.createElement("div");
     top.className = "history-item-top";
     const title = document.createElement("strong");
-    title.textContent = `게임 ${records.length - index}`;
+    const stakeForRating = Math.max(1, Number(record.startAmount) || 0);
+    const profitRate = profit / stakeForRating;
+    if (profit === 0) {
+      title.textContent = "변동없음";
+    } else if (profit > 0) {
+      title.textContent = profitRate < 0.25
+        ? "약간의 수익"
+        : profitRate < 1
+          ? "큰 이익"
+          : "매우 큰 이익";
+    } else {
+      const lossRate = Math.abs(profitRate);
+      title.textContent = lossRate < 0.25
+        ? "약간 손해"
+        : lossRate < 0.75
+          ? "큰 손해"
+          : "매우 큰 손해";
+    }
     const time = document.createElement("span");
     time.className = "history-time";
     time.textContent = relativeHistoryTime(record.finishedAt);
