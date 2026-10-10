@@ -1,13 +1,15 @@
 "use strict";
 
-const CACHE_NAME = "risk-game-cache-v14";
+const CACHE_NAME = "risk-game-cache-v15";
 
 const APP_FILES = [
   "./",
   "./index.html",
   "./style.css",
   "./script.js",
-  "./manifest.json"
+  "./manifest.json",
+  "./supabase-config.js",
+  "./friends.js"
 ];
 
 self.addEventListener("install", event => {
