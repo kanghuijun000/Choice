@@ -287,7 +287,9 @@ function estimateChoiceValue(choice) {
   if (choice.bonusType === "reduceLoss") {
     multiplier += Math.min(10, choice.bonusTurns || 5) * 0.012;
   } else if (choice.bonusType === "safePositive") {
-    multiplier += Math.min(10, choice.bonusTurns || 10) * 0.006;
+    // 10턴 동안 안전한 양수 선택지가 더 자주 등장하는 장기 효과를 반영합니다.
+    // 낮게 평가하면 +10% 보상에 붙은 이 보너스가 위험 없는 정답처럼 취급될 수 있습니다.
+    multiplier += Math.min(10, choice.bonusTurns || 10) * 0.012;
   }
 
   return (multiplier - 1) * 100;
