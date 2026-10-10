@@ -63,6 +63,8 @@
       await invoke("register", { password });
       localStorage.setItem(RECOVERY_ENABLED_KEY, "true");
       $("recoverySetupModal").classList.add("hidden");
+      const entryPanel = $("recoverySetupEntryPanel");
+      if (entryPanel) entryPanel.classList.add("hidden");
       $("setupRecoveryPassword").value = "";
       $("setupRecoveryPasswordConfirm").value = "";
       await saveCloudState();
@@ -189,6 +191,16 @@
     }
 
     $("saveRecoverySetupButton")?.addEventListener("click", setupPassword);
+    $("openRecoverySetupButton")?.addEventListener("click", () => {
+      if (localStorage.getItem(RECOVERY_ENABLED_KEY) === "true") {
+        message("openRecoverySetupMessage", "이 기기에는 복구 기능이 이미 연결되어 있습니다. 아래의 복구 비밀번호 변경을 이용하세요.", true);
+        return;
+      }
+      openInitialSetup();
+    });
+    if (localStorage.getItem(RECOVERY_ENABLED_KEY) === "true") {
+      $("recoverySetupEntryPanel")?.classList.add("hidden");
+    }
     $("skipRecoverySetupButton")?.addEventListener("click", () => {
       $("recoverySetupModal").classList.add("hidden");
       message("setupRecoveryMessage", "");
