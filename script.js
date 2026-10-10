@@ -348,8 +348,25 @@ function generateChoices(previous = null, count = 2, safeBoost = false) {
     eligible = available.filter(item => item.spread <= bestSpread + 8);
   }
 
-  // 조합의 다양성을 유지하되, 가중치가 반영된 후보 풀에서 무작위로 선택합니다.
-  const selected = randomItem(eligible).choices.map(choice => ({ ...choice }));
+  // 안전 보너스가 활성화되면 무패널티 선택지가 포함된 조합에 가중치를 줍니다.
+  const weighted = eligible.map(item => ({
+    item,
+    weight: safeBoost && item.choices.some(choice => choice.id === "safeNoPenalty")
+      ? 3
+      : 1
+  }));
+  const totalWeight = weighted.reduce((sum, entry) => sum + entry.weight, 0);
+  let roll = Math.random() * totalWeight;
+  let picked = weighted[weighted.length - 1].item;
+  for (const entry of weighted) {
+    roll -= entry.weight;
+    if (roll < 0) {
+      picked = entry.item;
+      break;
+    }
+  }
+
+  const selected = picked.choices.map(choice => ({ ...choice }));
   for (let i = selected.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [selected[i], selected[j]] = [selected[j], selected[i]];
