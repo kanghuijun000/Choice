@@ -352,12 +352,29 @@ function generateChoices(previous = null, count = 2, safeBoost = false) {
     eligible = available.filter(item => item.spread <= bestSpread + 0.5);
   }
 
-  // 안전 보너스가 활성화되면 무패널티 선택지가 포함된 조합에 가중치를 줍니다.
+  // 특정 가치 구간에 선택지가 몰려도, 조합 수가 많은 선택지만 과도하게 자주 나오지 않도록 보정합니다.
+  // eligible 조합 안에서 각 선택지가 포함된 횟수를 세고, 자주 등장할 수 있는 선택지의 조합 가중치를 낮춥니다.
+  const occurrenceCount = new Map();
+  eligible.forEach(item => {
+    item.choices.forEach(choice => {
+      occurrenceCount.set(
+        choice.id,
+        (occurrenceCount.get(choice.id) || 0) + 1
+      );
+    });
+  });
+
+  // 안전 보너스가 활성화된 경우 기존의 무패널티 선택지 가중치도 유지합니다.
   const weighted = eligible.map(item => ({
     item,
-    weight: safeBoost && item.choices.some(choice => choice.id === "safeNoPenalty")
-      ? 3
-      : 1
+    weight:
+      item.choices.reduce(
+        (sum, choice) => sum + 1 / occurrenceCount.get(choice.id),
+        0
+      ) *
+      (safeBoost && item.choices.some(choice => choice.id === "safeNoPenalty")
+        ? 3
+        : 1)
   }));
   const totalWeight = weighted.reduce((sum, entry) => sum + entry.weight, 0);
   let roll = Math.random() * totalWeight;
