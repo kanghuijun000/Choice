@@ -212,8 +212,6 @@
     }
   }
 
-  window.riskGameDeleteAccount = deleteCurrentAccount;
-
   let accountDeletionInProgress = false;
 
   async function deleteCurrentAccount() {
