@@ -338,14 +338,16 @@ function generateChoices(previous = null, count = 2, safeBoost = false) {
 
   const fresh = combinations.filter(item => !item.previous);
   const available = fresh.length ? fresh : combinations;
-  const maxSpread = targetCount === 3 ? 95 : 65;
+  // 선택지끼리 기대 가치가 크게 벌어지지 않도록 허용 폭을 좁게 유지합니다.
+  // 2개 모드는 특히 한쪽이 명백한 정답이 되는 조합을 강하게 억제합니다.
+  const maxSpread = targetCount === 3 ? 15 : 8;
   let eligible = available.filter(item => item.spread <= maxSpread);
 
-  // 극단적인 선택지가 포함돼 조건을 만족하는 조합이 없을 때도,
-  // 목표 개수는 유지하면서 가장 균형 잡힌 조합 중 하나를 고릅니다.
+  // 기준을 만족하는 조합이 없으면 가장 작은 가치 차이의 조합만 사용합니다.
+  // 기존처럼 최솟값보다 넓은 여유를 주면 명백히 우세한 선택지가 다시 나타날 수 있습니다.
   if (!eligible.length) {
     const bestSpread = Math.min(...available.map(item => item.spread));
-    eligible = available.filter(item => item.spread <= bestSpread + 8);
+    eligible = available.filter(item => item.spread <= bestSpread + 0.5);
   }
 
   // 안전 보너스가 활성화되면 무패널티 선택지가 포함된 조합에 가중치를 줍니다.
