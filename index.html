@@ -9,7 +9,7 @@
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./icon.svg">
   <link rel="manifest" href="./manifest.json">
-  <link rel="stylesheet" href="./style.css?v=13">
+  <link rel="stylesheet" href="./style.css?v=14">
 </head>
 <body>
 <div class="app">
@@ -301,46 +301,89 @@
     <section id="settingsScreen" class="screen hidden">
       <div class="section-heading">
         <h2>설정</h2>
-        <p>게임 설정 메뉴입니다.</p>
+        <p>원하는 설정 항목을 선택하세요.</p>
       </div>
-      <div class="panel profile-settings-panel">
-        <p class="eyebrow">MY ACCOUNT</p>
-        <h3>내 계정</h3>
-        <div class="profile-detail-row">
-          <span>이름</span>
-          <strong id="profileDisplayName">이름</strong>
+
+      <div class="settings-category-list" role="tablist" aria-label="설정 항목">
+        <button class="settings-category-button active" type="button" role="tab" aria-selected="true" data-settings-category="accountSecurity">
+          <span class="settings-category-icon">🔐</span><span><strong>계정 및 보안</strong><small>계정 정보와 복구 비밀번호</small></span><span class="settings-category-arrow">›</span>
+        </button>
+        <button class="settings-category-button" type="button" role="tab" aria-selected="false" data-settings-category="controlsBackground">
+          <span class="settings-category-icon">🎨</span><span><strong>컨트롤 및 배경</strong><small>배경색과 진동 설정</small></span><span class="settings-category-arrow">›</span>
+        </button>
+        <button class="settings-category-button" type="button" role="tab" aria-selected="false" data-settings-category="reset">
+          <span class="settings-category-icon">♻️</span><span><strong>초기화</strong><small>게임 진행 데이터 초기화</small></span><span class="settings-category-arrow">›</span>
+        </button>
+      </div>
+
+      <div id="settingsPanelAccountSecurity" class="settings-category-panel" data-settings-panel="accountSecurity">
+        <div class="panel profile-settings-panel">
+          <p class="eyebrow">MY ACCOUNT</p>
+          <h3>내 계정 정보</h3>
+          <div class="profile-detail-row"><span>이름</span><strong id="profileDisplayName">이름</strong></div>
+          <div class="profile-detail-row"><span>고유 코드</span><strong id="profileDisplayCode">#000</strong></div>
+          <p class="muted">온라인 계정 연결 후 부여된 4자리 코드는 이름을 바꿔도 유지됩니다.</p>
+          <button id="changeProfileNameButton" class="wide-button secondary">이름 변경</button>
         </div>
-        <div class="profile-detail-row">
-          <span>고유 코드</span>
-          <strong id="profileDisplayCode">#000</strong>
+
+        <div class="panel recovery-panel" id="recoverySetupEntryPanel">
+          <p class="eyebrow">ACCOUNT SECURITY</p>
+          <h3>복구 비밀번호 처음 설정</h3>
+          <p class="muted">복구 비밀번호를 아직 설정하지 않았다면 여기서 등록할 수 있습니다. 기존 계정과 게임 데이터는 초기화되지 않습니다.</p>
+          <button id="openRecoverySetupButton" class="wide-button primary">복구 비밀번호 설정</button>
+          <p id="openRecoverySetupMessage" class="recovery-message" role="status"></p>
         </div>
-        <p class="muted">온라인 계정 연결 후 부여된 4자리 코드는 이름을 바꿔도 유지됩니다.</p>
-        <button id="changeProfileNameButton" class="wide-button secondary">이름 변경</button>
+
+        <div class="panel recovery-panel">
+          <p class="eyebrow">ACCOUNT SECURITY</p>
+          <h3>복구 비밀번호 변경</h3>
+          <p class="muted">기존 비밀번호를 확인한 뒤 새 비밀번호를 두 번 입력하세요. 비밀번호는 10자 이상이어야 합니다.</p>
+          <label for="recoveryOldPassword">기존 비밀번호</label>
+          <input id="recoveryOldPassword" type="password" autocomplete="current-password" placeholder="기존 비밀번호" minlength="10" maxlength="128">
+          <label for="recoveryNewPassword">새 비밀번호</label>
+          <input id="recoveryNewPassword" type="password" autocomplete="new-password" placeholder="새 비밀번호 (10자 이상)" minlength="10" maxlength="128">
+          <label for="recoveryNewPasswordConfirm">새 비밀번호 확인</label>
+          <input id="recoveryNewPasswordConfirm" type="password" autocomplete="new-password" placeholder="새 비밀번호 다시 입력" minlength="10" maxlength="128">
+          <button id="changeRecoveryPasswordButton" class="wide-button primary">복구 비밀번호 변경</button>
+          <p id="changeRecoveryMessage" class="recovery-message" role="status"></p>
+        </div>
+        <div class="panel">
+          <p>복구 비밀번호를 설정하면 이 계정의 게임 데이터도 온라인에 동기화됩니다.</p>
+        </div>
       </div>
-      <div class="panel recovery-panel" id="recoverySetupEntryPanel">
-        <p class="eyebrow">ACCOUNT SECURITY</p>
-        <h3>복구 비밀번호 처음 설정</h3>
-        <p class="muted">처음 설정을 건너뛰었거나 이미 이름과 고유 코드를 발급받은 계정도 여기서 복구 비밀번호를 등록할 수 있습니다. 기존 계정과 게임 데이터는 초기화되지 않습니다.</p>
-        <button id="openRecoverySetupButton" class="wide-button primary">복구 비밀번호 설정</button>
-        <p id="openRecoverySetupMessage" class="recovery-message" role="status"></p>
+
+      <div id="settingsPanelControlsBackground" class="settings-category-panel hidden" data-settings-panel="controlsBackground">
+        <div class="panel settings-preferences-panel">
+          <p class="eyebrow">BACKGROUND COLOR</p>
+          <h3>배경 색상</h3>
+          <p class="muted">빨간색·파란색·초록색 선택지 버튼과 겹치지 않는 배경색입니다.</p>
+          <div class="background-theme-options" role="group" aria-label="배경 색상 선택">
+            <button type="button" class="background-theme-option active" data-theme-value="graphite" aria-pressed="true"><span class="theme-swatch theme-graphite"></span><span>흑연</span></button>
+            <button type="button" class="background-theme-option" data-theme-value="cocoa" aria-pressed="false"><span class="theme-swatch theme-cocoa"></span><span>코코아</span></button>
+            <button type="button" class="background-theme-option" data-theme-value="plum" aria-pressed="false"><span class="theme-swatch theme-plum"></span><span>자두</span></button>
+            <button type="button" class="background-theme-option" data-theme-value="stone" aria-pressed="false"><span class="theme-swatch theme-stone"></span><span>돌색</span></button>
+          </div>
+          <p id="backgroundThemeMessage" class="settings-feedback" role="status"></p>
+        </div>
+        <div class="panel settings-preferences-panel">
+          <p class="eyebrow">HAPTIC FEEDBACK</p>
+          <h3>진동</h3>
+          <p class="muted">게임 중지 또는 게임 금액을 모두 잃었을 때 짧게 진동합니다. 기기나 브라우저가 진동을 지원하지 않으면 작동하지 않을 수 있습니다.</p>
+          <label class="settings-switch-row" for="vibrationEnabledToggle">
+            <span><strong>진동 사용</strong><small>게임 종료 시 짧은 진동</small></span>
+            <input id="vibrationEnabledToggle" type="checkbox" checked>
+          </label>
+        </div>
       </div>
-      <div class="panel recovery-panel">
-        <p class="eyebrow">ACCOUNT SECURITY</p>
-        <h3>복구 비밀번호 변경</h3>
-        <p class="muted">기존 비밀번호를 확인한 뒤 새 비밀번호를 두 번 입력하세요. 비밀번호는 10자 이상이어야 합니다.</p>
-        <label for="recoveryOldPassword">기존 비밀번호</label>
-        <input id="recoveryOldPassword" type="password" autocomplete="current-password" placeholder="기존 비밀번호" minlength="10" maxlength="128">
-        <label for="recoveryNewPassword">새 비밀번호</label>
-        <input id="recoveryNewPassword" type="password" autocomplete="new-password" placeholder="새 비밀번호 (12자 이상)" minlength="10" maxlength="128">
-        <label for="recoveryNewPasswordConfirm">새 비밀번호 확인</label>
-        <input id="recoveryNewPasswordConfirm" type="password" autocomplete="new-password" placeholder="새 비밀번호 다시 입력" minlength="10" maxlength="128">
-        <button id="changeRecoveryPasswordButton" class="wide-button primary">복구 비밀번호 변경</button>
-        <p id="changeRecoveryMessage" class="recovery-message" role="status"></p>
-      </div>
-      <div class="panel">
-        <p>게임 진행 데이터는 이 기기에 자동 저장됩니다. 복구 비밀번호를 설정하면 이 계정의 게임 데이터도 온라인에 동기화됩니다.</p>
-        <p class="muted">초기화하면 이 기기의 예산, 업그레이드, 은행, 시급 대기 시간, 게임 진행 상황이 처음 상태로 돌아갑니다. 계정 이름과 코드는 유지됩니다.</p>
-        <button id="resetGameButton" class="wide-button danger">게임 데이터 전체 초기화</button>
+
+      <div id="settingsPanelReset" class="settings-category-panel hidden" data-settings-panel="reset">
+        <div class="panel reset-settings-panel">
+          <p class="eyebrow">RESET</p>
+          <h3>게임 데이터 초기화</h3>
+          <p>예산, 게임 한도, 리롤, 은행 원금과 이자, 이자율, 시급 대기 시간, 해금 항목, 게임 기록과 진행 중인 게임을 초기 상태로 되돌립니다.</p>
+          <p class="muted">초기화하면 배경색과 진동 설정도 기본값으로 돌아갑니다. 계정 이름과 고유 코드는 유지됩니다. 이 작업은 되돌릴 수 없습니다.</p>
+          <button id="resetGameButton" class="wide-button danger">게임 데이터 전체 초기화</button>
+        </div>
       </div>
     </section>
 
@@ -503,7 +546,7 @@
   </div>
 </div>
 <div id="purchaseNotice" class="purchase-notice" role="status" aria-live="polite"></div>
-<script src="./script.js?v=28" defer></script>
+<script src="./script.js?v=29" defer></script>
 <script src="./supabase-config.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <script src="./friends.js?v=17" defer></script>
