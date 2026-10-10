@@ -1029,6 +1029,26 @@ input::-webkit-inner-spin-button, input::-webkit-outer-spin-button {
 .friend-list-heading > span {
   font-size: 11px;
 }
+.friend-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.friend-refresh-button {
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 1px solid #3c70c9;
+  border-radius: 10px;
+  background: #1d3d70;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+}
+.friend-refresh-button:disabled {
+  opacity: .65;
+  cursor: wait;
+}
 .friend-list {
   display: grid;
   gap: 9px;
