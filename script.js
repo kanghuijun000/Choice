@@ -709,6 +709,10 @@ window.addEventListener("risk-game-account-restored", () => {
   if (!state.pendingSummary && !state.activeGame) showScreen("homeScreen");
 });
 
+window.addEventListener("risk-game-account-displaced", () => {
+  showScreen("accountChoiceScreen");
+});
+
 function openProfileEditor(initialSetup = false) {
   $("profileError").textContent = "";
   $("profileModal").classList.remove("hidden");
@@ -795,8 +799,10 @@ const TITLES = {
 };
 
 function showScreen(id) {
-  if (state.activeGame && id !== "gameScreen") return;
-  if (state.pendingSummary && id !== "summaryScreen") return;
+  const displaced = localStorage.getItem("risk-game-account-displaced-v1") === "true";
+  if (displaced && id !== "accountChoiceScreen" && id !== "restoreScreen") return;
+  if (!displaced && state.activeGame && id !== "gameScreen") return;
+  if (!displaced && state.pendingSummary && id !== "summaryScreen") return;
 
   const target = $(id);
   if (!target) return;
@@ -838,6 +844,8 @@ function showScreen(id) {
 
 $("newAccountButton").addEventListener("click", () => {
   // 신규 계정 흐름을 시작하되 게임 진행 데이터는 초기화하지 않습니다.
+  localStorage.removeItem("risk-game-account-displaced-v1");
+  localStorage.removeItem("risk-game-recovery-enabled-v1");
   profile = null;
   $("profileNameInput").value = "";
   showScreen("homeScreen");
@@ -1926,7 +1934,9 @@ function initializeApp() {
   updateAll();
   renderProfile();
 
-  if (state.pendingSummary) {
+  if (localStorage.getItem("risk-game-account-displaced-v1") === "true") {
+    showScreen("accountChoiceScreen");
+  } else if (state.pendingSummary) {
     showScreen("summaryScreen");
   } else if (state.activeGame) {
     showScreen("gameScreen");
