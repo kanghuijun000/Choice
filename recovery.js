@@ -215,6 +215,35 @@
 
   let accountDeletionInProgress = false;
 
+  function clearLocalAccountAfterDeletion() {
+    deviceVerified = false;
+    if (saveTimer !== null) {
+      clearTimeout(saveTimer);
+      saveTimer = null;
+    }
+
+    // 서버에서 이미 삭제된 계정의 오래된 로그인 정보가 남아 있는 경우도 정리합니다.
+    try { client?.auth.signOut({ scope: "local" }).catch(() => {}); } catch {}
+
+    const keysToRemove = [];
+    const projectUrl = String(config.url || window.RISK_GAME_SUPABASE_CONFIG?.url || "");
+    let projectRef = "";
+    try { projectRef = new URL(projectUrl).hostname.split(".")[0]; } catch {}
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key) continue;
+      if (key.startsWith("risk-game-") ||
+          ["riskGameState", "risk-game", "riskGame", "gameState"].includes(key) ||
+          (projectRef && key.startsWith("sb-" + projectRef + "-"))) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+
+    // 앱을 다시 시작해 신규 / 기존 계정 선택 화면으로 진입시킵니다.
+    window.location.replace("./");
+  }
+
   async function deleteCurrentAccount() {
     if (accountDeletionInProgress) return;
     const button = $("deleteAccountButton");
@@ -236,32 +265,18 @@
 
     try {
       await invoke("delete_account", { deviceId: getDeviceId() });
-      deviceVerified = false;
-      if (saveTimer !== null) {
-        clearTimeout(saveTimer);
-        saveTimer = null;
-      }
-
-      try { await client.auth.signOut({ scope: "local" }); } catch {}
-
-      const keysToRemove = [];
-      const projectUrl = String(config.url || window.RISK_GAME_SUPABASE_CONFIG?.url || "");
-      let projectRef = "";
-      try { projectRef = new URL(projectUrl).hostname.split(".")[0]; } catch {}
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (!key) continue;
-        if (key.startsWith("risk-game-") ||
-            ["riskGameState", "risk-game", "riskGame", "gameState"].includes(key) ||
-            (projectRef && key.startsWith("sb-" + projectRef + "-"))) {
-          keysToRemove.push(key);
-        }
-      }
-      keysToRemove.forEach(key => localStorage.removeItem(key));
-
-      window.riskGameFinishAccountDeletion?.();
+      clearLocalAccountAfterDeletion();
     } catch (error) {
       const detail = String(error?.message || "계정 삭제에 실패했습니다.");
+
+      // 서버가 계정을 확인하지 못한다면 다른 기기에서 이미 삭제된 뒤
+      // 이 기기에 만료된 세션만 남은 상황일 수 있습니다. 이 경우 로컬 세션과
+      // 계정 캐시를 정리하고 첫 화면으로 돌아갑니다. 서버 삭제 여부 자체는
+      // 인증이 거부된 상태에서는 이 기기에서 다시 확인할 수 없습니다.
+      if (detail.includes("계정을 확인할 수 없습니다")) {
+        clearLocalAccountAfterDeletion();
+        return;
+      }
       if (status) {
         status.textContent = detail + " 계정은 삭제되지 않았을 수 있으므로 화면을 확인한 뒤 다시 시도하세요.";
         status.classList.add("recovery-error");
