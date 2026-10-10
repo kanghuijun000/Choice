@@ -600,7 +600,7 @@ function loadProfile() {
     if (!parsed || typeof parsed !== "object") return null;
     const name = String(parsed.name || "").trim();
     const code = String(parsed.code || "");
-    if (!name || !/^\d{3}$/.test(code)) return null;
+    if (!name || !/^\d{3,4}$/.test(code)) return null;
     return { name: name.slice(0, 20), code };
   } catch {
     return null;
@@ -665,6 +665,17 @@ function renderProfile() {
   $("profileDisplayName").textContent = displayName;
   $("profileDisplayCode").textContent = displayCode;
 }
+
+window.riskGameApplyCloudProfile = cloudProfile => {
+  if (!cloudProfile || typeof cloudProfile.display_name !== "string" ||
+      !/^\d{4}$/.test(String(cloudProfile.friend_code || ""))) return;
+  profile = {
+    name: cloudProfile.display_name.trim().slice(0, 20) || "플레이어",
+    code: String(cloudProfile.friend_code)
+  };
+  saveProfile();
+  renderProfile();
+};
 
 function openProfileEditor(initialSetup = false) {
   $("profileError").textContent = "";
