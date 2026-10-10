@@ -15,7 +15,7 @@ const LEGACY_KEYS = [
 const MAX_MONEY = Number.MAX_VALUE;
 const BANK_MINUTE_MS = 60000;
 const INITIAL_BANK_RATE = 1;
-const WAGE_AMOUNT = 5000;
+const WAGE_AMOUNT = 10000;
 const WAGE_COOLDOWN_MS = 3600000;
 
 const $ = id => document.getElementById(id);
