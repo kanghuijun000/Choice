@@ -12,6 +12,7 @@
   const DISPLACED_KEY = "risk-game-account-displaced-v1";
   let deviceVerified = false;
   let displacementHandled = false;
+  let deviceCheckInProgress = false;
 
   function getDeviceId() {
     let id = localStorage.getItem(DEVICE_ID_KEY);
@@ -356,22 +357,32 @@
     window.addEventListener("risk-game-initial-profile-created", openInitialSetup);
     window.addEventListener("risk-game-state-updated", scheduleCloudSave);
     window.addEventListener("pagehide", saveCloudState);
-    const recheckDeviceAndSync = async () => {
+    const recheckDeviceAndSync = async (syncState = true) => {
       if (document.visibilityState === "hidden" ||
-          localStorage.getItem(RECOVERY_ENABLED_KEY) !== "true") return;
+          localStorage.getItem(RECOVERY_ENABLED_KEY) !== "true" ||
+          deviceCheckInProgress) return;
+      deviceCheckInProgress = true;
       try {
-        if (await verifyDeviceSession()) await saveCloudState();
+        if (await verifyDeviceSession() && syncState) await saveCloudState();
       } catch (error) {
         // 연결 오류만으로 계정 소유권을 바꾸거나 로컬 데이터를 지우지 않습니다.
         console.warn("기기 연결 상태 확인 실패:", error);
+      } finally {
+        deviceCheckInProgress = false;
       }
     };
-    document.addEventListener("visibilitychange", recheckDeviceAndSync);
-    window.addEventListener("pageshow", recheckDeviceAndSync);
-    window.addEventListener("focus", recheckDeviceAndSync);
+    document.addEventListener("visibilitychange", () => recheckDeviceAndSync(true));
+    window.addEventListener("pageshow", () => recheckDeviceAndSync(true));
+    window.addEventListener("focus", () => recheckDeviceAndSync(true));
+
+    // 다른 기기에서 계정을 복구하면 앱이 계속 열려 있어도 최대 5초 안에 소유권 변경을 감지합니다.
+    // 주기 확인에서는 소유권만 검사하고 매번 게임 데이터를 덮어쓰지는 않습니다.
+    window.setInterval(() => {
+      if (document.visibilityState === "visible") recheckDeviceAndSync(false);
+    }, 5000);
 
     if (localStorage.getItem(RECOVERY_ENABLED_KEY) === "true") {
-      window.setTimeout(recheckDeviceAndSync, 100);
+      window.setTimeout(() => recheckDeviceAndSync(true), 100);
     }
   }
 
