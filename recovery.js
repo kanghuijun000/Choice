@@ -269,13 +269,37 @@
     } catch (error) {
       const detail = String(error?.message || "계정 삭제에 실패했습니다.");
 
-      // 서버가 계정을 확인하지 못한다면 다른 기기에서 이미 삭제된 뒤
-      // 이 기기에 만료된 세션만 남은 상황일 수 있습니다. 이 경우 로컬 세션과
-      // 계정 캐시를 정리하고 첫 화면으로 돌아갑니다. 서버 삭제 여부 자체는
-      // 인증이 거부된 상태에서는 이 기기에서 다시 확인할 수 없습니다.
+      // A stale access token can no longer identify a user that was deleted elsewhere.
+      // Ask for the recovery password and let the server verify the exact old user ID.
       if (detail.includes("계정을 확인할 수 없습니다")) {
-        clearLocalAccountAfterDeletion();
-        return;
+        let staleUserId = "";
+        try {
+          const { data } = await client.auth.getSession();
+          staleUserId = data?.session?.user?.id || "";
+        } catch {}
+        if (staleUserId) {
+          const password = window.prompt(
+            "이 기기의 계정 로그인 정보가 만료되었거나 서버에서 계정을 찾지 못했습니다.\n\n계정 소유자 확인을 위해 해당 계정의 복구 비밀번호를 입력하세요.\n계정이 이미 삭제되었다면 서버 확인 후 이 기기의 오래된 정보만 정리합니다."
+          );
+          if (password !== null) {
+            try {
+              await invoke("delete_account_with_recovery_password", { staleUserId, password });
+              clearLocalAccountAfterDeletion();
+              return;
+            } catch (fallbackError) {
+              if (status) {
+                status.textContent = String(fallbackError?.message || "복구 비밀번호로 계정을 확인하지 못했습니다.");
+                status.classList.add("recovery-error");
+              }
+            }
+          } else if (status) {
+            status.textContent = "삭제 확인이 취소되었습니다. 계정은 변경하지 않았습니다.";
+            status.classList.add("recovery-error");
+          }
+        } else if (status) {
+          status.textContent = "기존 계정 정보를 찾지 못했습니다. 기존 계정 복구 화면에서 복구 비밀번호로 다시 연결해 주세요.";
+          status.classList.add("recovery-error");
+        }
       }
       if (status) {
         status.textContent = detail + " 계정은 삭제되지 않았을 수 있으므로 화면을 확인한 뒤 다시 시도하세요.";
