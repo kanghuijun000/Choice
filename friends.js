@@ -23,6 +23,7 @@
   let renderedRequestsSignature = null;
   let renderedFriendsSignature = null;
   let presenceSyncInProgress = false;
+  let presenceSyncPending = false;
   let lastPresenceSyncAt = 0;
 
   function withTimeout(promise, label, milliseconds = 12000) {
@@ -248,7 +249,12 @@
   async function syncMyPresence(force = false) {
     if (!client || !currentUser || document.visibilityState !== "visible") return;
     const now = Date.now();
-    if (presenceSyncInProgress || (!force && now - lastPresenceSyncAt < 9000)) return;
+    if (presenceSyncInProgress) {
+      // 예산이 바뀌는 동안 이전 동기화가 진행 중이면 최신 예산을 한 번 더 전송합니다.
+      if (force) presenceSyncPending = true;
+      return;
+    }
+    if (!force && now - lastPresenceSyncAt < 9000) return;
     presenceSyncInProgress = true;
     lastPresenceSyncAt = now;
     try {
@@ -266,6 +272,10 @@
       console.error("온라인 상태/예산 동기화 실패:", error);
     } finally {
       presenceSyncInProgress = false;
+      if (presenceSyncPending) {
+        presenceSyncPending = false;
+        window.setTimeout(() => syncMyPresence(true), 0);
+      }
     }
   }
 
@@ -584,7 +594,8 @@
       updateCloudName(event.detail);
     });
     window.addEventListener("risk-game-budget-updated", () => {
-      syncMyPresence();
+      // 예산 변경은 9초 제한을 우회해 서버에 즉시 반영합니다.
+      syncMyPresence(true);
     });
     $("refreshFriendsButton").addEventListener("click", refreshFriendLists);
 
