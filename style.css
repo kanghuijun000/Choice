@@ -915,3 +915,52 @@ input::-webkit-inner-spin-button, input::-webkit-outer-spin-button {
   opacity: 0;
   transform: translate(-50%, -56%);
 }
+
+
+/* 계정 이름 및 고정 코드 */
+.profile-strip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: -5px 0 20px;
+  padding: 12px 15px;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  background: rgba(29, 41, 64, .72);
+}
+.profile-avatar {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: #253b61;
+  font-size: 21px;
+}
+.profile-strip-info { min-width: 0; }
+.profile-strip-info strong,
+.profile-strip-info span { display: block; overflow-wrap: anywhere; }
+.profile-strip-info strong { font-size: 14px; }
+.profile-strip-info span { color: #83aaff; font-size: 12px; font-weight: 800; letter-spacing: .5px; }
+.profile-settings-panel { margin-bottom: 14px; }
+.profile-settings-panel h3 { margin: 0 0 12px; font-size: 20px; }
+.profile-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(140, 160, 200, .13);
+}
+.profile-detail-row span { color: var(--muted); font-size: 13px; }
+.profile-detail-row strong { text-align: right; overflow-wrap: anywhere; }
+.profile-settings-panel .muted { font-size: 12px; }
+.profile-modal-card .eyebrow { margin-bottom: 8px; }
+.profile-modal-card h2 { margin-bottom: 8px; }
+.profile-code-preview {
+  margin: 10px 0 0;
+  color: #83aaff;
+  font-size: 13px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
