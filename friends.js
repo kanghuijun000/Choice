@@ -20,6 +20,8 @@
   let connectingPromise = null;
   let busy = false;
   let syncedUserId = null;
+  let renderedRequestsSignature = null;
+  let renderedFriendsSignature = null;
 
   function withTimeout(promise, label, milliseconds = 12000) {
     let timer;
@@ -175,14 +177,21 @@
   async function loadRequests() {
     const list = $("friendRequests");
     if (!list) return;
-    list.replaceChildren();
+
     if (!client || !currentUser) {
-      const empty = document.createElement("p");
-      empty.className = "muted friend-empty";
-      empty.textContent = "온라인 연결 후 받은 친구 요청을 확인할 수 있습니다.";
-      list.append(empty);
+      const signature = "offline";
+      if (renderedRequestsSignature !== signature) {
+        const empty = document.createElement("p");
+        empty.className = "muted friend-empty";
+        empty.textContent = "온라인 연결 후 받은 친구 요청을 확인할 수 있습니다.";
+        list.replaceChildren(empty);
+        renderedRequestsSignature = signature;
+      }
       return;
     }
+
+    // 새 데이터를 다 가져온 뒤 실제 내용이 바뀐 경우에만 DOM을 갱신합니다.
+    // 주기적인 확인 때마다 요소를 지웠다 다시 만들면 모바일 스크롤이 튀거나 깜빡일 수 있습니다.
     const { data: requests, error } = await client
       .from("friend_requests")
       .select("id, sender_id, sender_name, sender_code, created_at")
@@ -190,25 +199,39 @@
       .eq("status", "pending")
       .order("created_at", { ascending: true });
     if (error) throw error;
-    if (!requests || requests.length === 0) {
+
+    const rows = requests || [];
+    const signature = currentUser.id + ":" + JSON.stringify(rows.map(request => [
+      request.id, request.sender_id, request.sender_name, request.sender_code
+    ]));
+    if (signature === renderedRequestsSignature) return;
+
+    const fragment = document.createDocumentFragment();
+    if (rows.length === 0) {
       const empty = document.createElement("p");
       empty.className = "muted friend-empty";
       empty.textContent = "새로운 친구 요청이 없습니다.";
-      list.append(empty);
-      return;
+      fragment.append(empty);
+    } else {
+      rows.forEach(request => fragment.append(makeRequestRow(request)));
     }
-    requests.forEach(request => list.append(makeRequestRow(request)));
+    list.replaceChildren(fragment);
+    renderedRequestsSignature = signature;
   }
 
   async function loadFriends() {
     const list = $("friendList");
-    list.replaceChildren();
+    if (!list) return;
 
     if (!client || !currentUser) {
-      const empty = document.createElement("p");
-      empty.className = "muted friend-empty";
-      empty.textContent = "온라인 연결 후 친구 목록을 불러올 수 있습니다.";
-      list.append(empty);
+      const signature = "offline";
+      if (renderedFriendsSignature !== signature) {
+        const empty = document.createElement("p");
+        empty.className = "muted friend-empty";
+        empty.textContent = "온라인 연결 후 친구 목록을 불러올 수 있습니다.";
+        list.replaceChildren(empty);
+        renderedFriendsSignature = signature;
+      }
       return;
     }
 
@@ -221,26 +244,34 @@
     if (linksError) throw linksError;
 
     const ids = (links || []).map(item => item.friend_id);
-    if (!ids.length) {
+    let profiles = [];
+    if (ids.length) {
+      const { data, error: profilesError } = await client
+        .from("profiles")
+        .select("id, display_name, friend_code")
+        .in("id", ids);
+
+      if (profilesError) throw profilesError;
+      const byId = new Map((data || []).map(profile => [profile.id, profile]));
+      profiles = ids.map(id => byId.get(id)).filter(Boolean);
+    }
+
+    const signature = currentUser.id + ":" + JSON.stringify(profiles.map(friend => [
+      friend.id, friend.display_name, friend.friend_code
+    ]));
+    if (signature === renderedFriendsSignature) return;
+
+    const fragment = document.createDocumentFragment();
+    if (!profiles.length) {
       const empty = document.createElement("p");
       empty.className = "muted friend-empty";
       empty.textContent = "아직 추가한 친구가 없습니다.";
-      list.append(empty);
-      return;
+      fragment.append(empty);
+    } else {
+      profiles.forEach(friend => fragment.append(makeFriendRow(friend)));
     }
-
-    const { data: profiles, error: profilesError } = await client
-      .from("profiles")
-      .select("id, display_name, friend_code")
-      .in("id", ids);
-
-    if (profilesError) throw profilesError;
-
-    const byId = new Map((profiles || []).map(profile => [profile.id, profile]));
-    ids.forEach(id => {
-      const friend = byId.get(id);
-      if (friend) list.append(makeFriendRow(friend));
-    });
+    list.replaceChildren(fragment);
+    renderedFriendsSignature = signature;
   }
 
   async function refreshCloudData() {
