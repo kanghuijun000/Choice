@@ -446,6 +446,8 @@ function defaultState() {
     bankRate: INITIAL_BANK_RATE,
     threeChoiceUnlocked: false,
     threeChoiceMode: false,
+    backgroundTheme: "graphite",
+    vibrationEnabled: true,
     wageNextAt: 0,
     activeGame: null,
     pendingSummary: null,
@@ -489,6 +491,10 @@ function normalizeState(raw) {
     ),
     threeChoiceUnlocked: Boolean(raw.threeChoiceUnlocked),
     threeChoiceMode: Boolean(raw.threeChoiceMode && raw.threeChoiceUnlocked),
+    backgroundTheme: ["graphite", "cocoa", "plum", "stone"].includes(raw.backgroundTheme)
+      ? raw.backgroundTheme
+      : base.backgroundTheme,
+    vibrationEnabled: raw.vibrationEnabled !== false,
     bankElapsedMs: Math.max(
       0,
       Math.floor(Number(raw.bankElapsedMs) || 0) % BANK_MINUTE_MS
@@ -715,6 +721,66 @@ function scheduleSave() {
   }, 100);
 }
 
+const SETTINGS_DEFAULT_CATEGORY = "accountSecurity";
+
+function setSettingsCategory(category) {
+  const allowed = ["accountSecurity", "controlsBackground", "reset"];
+  const selected = allowed.includes(category) ? category : SETTINGS_DEFAULT_CATEGORY;
+  document.querySelectorAll("[data-settings-category]").forEach(button => {
+    const active = button.dataset.settingsCategory === selected;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-selected", String(active));
+  });
+  document.querySelectorAll("[data-settings-panel]").forEach(panel => {
+    panel.classList.toggle("hidden", panel.dataset.settingsPanel !== selected);
+  });
+}
+
+function applyBackgroundTheme() {
+  const allowed = ["graphite", "cocoa", "plum", "stone"];
+  const theme = allowed.includes(state.backgroundTheme) ? state.backgroundTheme : "graphite";
+  document.documentElement.dataset.appTheme = theme;
+  document.querySelectorAll("[data-theme-value]").forEach(button => {
+    const active = button.dataset.themeValue === theme;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+}
+
+function updateSettingsControls() {
+  applyBackgroundTheme();
+  const toggle = $("vibrationEnabledToggle");
+  if (toggle) toggle.checked = state.vibrationEnabled !== false;
+}
+
+function triggerGameVibration() {
+  if (state.vibrationEnabled === false || !("vibrate" in navigator)) return;
+  try { navigator.vibrate(120); } catch (error) {
+    console.warn("진동을 실행하지 못했습니다:", error);
+  }
+}
+
+document.querySelectorAll("[data-settings-category]").forEach(button => {
+  button.addEventListener("click", () => setSettingsCategory(button.dataset.settingsCategory));
+});
+
+document.querySelectorAll("[data-theme-value]").forEach(button => {
+  button.addEventListener("click", () => {
+    const theme = button.dataset.themeValue;
+    if (!["graphite", "cocoa", "plum", "stone"].includes(theme)) return;
+    state.backgroundTheme = theme;
+    applyBackgroundTheme();
+    saveState();
+    const message = $("backgroundThemeMessage");
+    if (message) message.textContent = "배경색을 저장했습니다.";
+  });
+});
+
+$("vibrationEnabledToggle").addEventListener("change", event => {
+  state.vibrationEnabled = Boolean(event.target.checked);
+  saveState();
+});
+
 function renderProfile() {
   if (!profile) return;
   const displayName = profile.name;
@@ -866,6 +932,10 @@ function showScreen(id) {
   if (id === "summaryScreen") renderSummary();
   if (id === "shopScreen") updateShop();
   if (id === "historyScreen") renderGameHistory();
+  if (id === "settingsScreen") {
+    setSettingsCategory(SETTINGS_DEFAULT_CATEGORY);
+    updateSettingsControls();
+  }
 
   if (id === "moneyScreen") {
     setBankTab(currentBankTab);
@@ -1393,6 +1463,10 @@ $("stopGameButton").addEventListener("click", () => {
 
 function finishGame(reason) {
   if (!state.activeGame || state.pendingSummary) return;
+
+  if (reason === "사용자가 게임을 중지했습니다." || reason === "게임 금액 소진") {
+    triggerGameVibration();
+  }
 
   const game = state.activeGame;
 
@@ -2020,6 +2094,8 @@ $("resetGameButton").addEventListener("click", () => {
       $("shopMessage").textContent = "";
 
       saveState();
+      applyBackgroundTheme();
+      updateSettingsControls();
       updateAll();
       showScreen("homeScreen");
     },
@@ -2036,6 +2112,7 @@ function updateAll() {
   updateShop();
   updateBank();
   updateWage();
+  updateSettingsControls();
 
   if (currentScreen === "amountScreen") updateAmountScreen();
   if (currentScreen === "gameScreen") renderGame();
