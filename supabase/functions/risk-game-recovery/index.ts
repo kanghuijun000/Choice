@@ -21,6 +21,17 @@ async function digestPassword(password: string, secret: string) {
   return Array.from(new Uint8Array(signature), byte => byte.toString(16).padStart(2, "0")).join("");
 }
 
+async function passwordFingerprints(password: string, secret: string) {
+  // Compare 8 consecutive Unicode characters, ignoring case and equivalent Unicode forms.
+  const chars = Array.from(password.normalize("NFKC").toLocaleLowerCase("en-US"));
+  const unique = new Set<string>();
+  for (let i = 0; i <= chars.length - 8; i++) {
+    const part = chars.slice(i, i + 8).join("");
+    unique.add(await digestPassword("risk-game-recovery-substring-v1:" + part, secret));
+  }
+  return [...unique];
+}
+
 function validPassword(password: unknown): password is string {
   return typeof password === "string" && password.length >= 10 &&
     password.length <= 128 && !password.includes("\u0000");
@@ -155,15 +166,50 @@ Deno.serve(async (req) => {
       return reply({ error: "이미 사용 중인 비밀번호입니다. 다른 비밀번호를 선택해 주세요." }, 409);
     }
 
+    const fingerprints = await passwordFingerprints(password, hmacSecret);
+    const oldFingerprints = action === "change"
+      ? await passwordFingerprints(String(body.oldPassword), hmacSecret)
+      : [];
+    const { data: fingerprintsReserved, error: fingerprintError } = await service.rpc(
+      "reserve_risk_game_recovery_fingerprints",
+      { p_user_id: user.id, p_fingerprints: fingerprints },
+    );
+    if (fingerprintError) {
+      return reply({ error: "복구 비밀번호 유사성 검사 기능이 준비되지 않았습니다. 잠시 후 다시 시도하세요." }, 503);
+    }
+    if (fingerprintsReserved !== true) {
+      return reply({
+        error: "다른 복구 비밀번호와 8자 이상 연속으로 겹칩니다. 다른 비밀번호를 선택해 주세요.",
+        code: "RECOVERY_PASSWORD_OVERLAP",
+      }, 409);
+    }
+
     const { error: updateError } = await service.auth.admin.updateUserById(user.id, {
       email, password, email_confirm: true,
     });
-    if (updateError) return reply({ error: "복구 로그인 설정에 실패했습니다: " + updateError.message }, 500);
+    if (updateError) {
+      // Keep the prior fingerprints if changing failed; a failed new registration leaves none.
+      await service.rpc("keep_risk_game_recovery_fingerprints", {
+        p_user_id: user.id, p_fingerprints: oldFingerprints,
+      });
+      return reply({ error: "복구 로그인 설정에 실패했습니다." }, 500);
+    }
 
     const { error: saveError } = await service.from("risk_game_recovery_credentials").upsert({
       user_id: user.id, password_digest: digest, synthetic_email: email, updated_at: new Date().toISOString(),
     }, { onConflict: "user_id" });
-    if (saveError) return reply({ error: "복구 정보 저장에 실패했습니다." }, 500);
+    if (saveError) {
+      // Keep both old and new fingerprints until the credential record is repaired; this fails closed.
+      return reply({ error: "복구 정보 저장에 실패했습니다. 새 비밀번호로 다시 로그인해 확인해 주세요." }, 500);
+    }
+
+    const { error: cleanupError } = await service.rpc("keep_risk_game_recovery_fingerprints", {
+      p_user_id: user.id, p_fingerprints: fingerprints,
+    });
+    if (cleanupError) {
+      // Leaving extra fingerprints is restrictive but does not expose an account.
+      console.error("Recovery fingerprint cleanup failed:", cleanupError);
+    }
     return reply({ ok: true });
   }
 
