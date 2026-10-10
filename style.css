@@ -882,3 +882,36 @@ input::-webkit-inner-spin-button, input::-webkit-outer-spin-button {
 #shopMessage.shop-message-fading {
   opacity: 0;
 }
+
+
+/* 구매 불가 사유를 화면 중앙에 표시 */
+.purchase-notice {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 2000;
+  max-width: calc(100vw - 40px);
+  padding: 14px 22px;
+  border: 1px solid rgba(255, 82, 104, .55);
+  border-radius: 14px;
+  background: rgba(15, 20, 33, .96);
+  color: #ff5268;
+  font-size: 18px;
+  font-weight: 900;
+  text-align: center;
+  box-shadow: 0 10px 34px rgba(0, 0, 0, .38);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translate(-50%, -44%);
+  transition: opacity .9s ease, transform .9s ease, visibility .9s ease;
+}
+.purchase-notice-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, -50%);
+}
+.purchase-notice-fading {
+  opacity: 0;
+  transform: translate(-50%, -56%);
+}
