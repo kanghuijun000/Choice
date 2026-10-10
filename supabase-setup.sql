@@ -117,7 +117,8 @@ $$;
 revoke all on function public.lookup_risk_game_friend(text, text) from public, anon;
 grant execute on function public.lookup_risk_game_friend(text, text) to authenticated;
 
-grant select, update on public.profiles to authenticated;
+grant select on public.profiles to authenticated;
+grant update (display_name) on public.profiles to authenticated;
 grant select, insert, delete on public.user_friends to authenticated;
 
 -- 새로 만든 함수와 테이블은 인증 사용자에게만 필요한 권한을 줍니다.
