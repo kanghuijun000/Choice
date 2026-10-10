@@ -1195,3 +1195,40 @@ input::-webkit-inner-spin-button, input::-webkit-outer-spin-button {
 .account-entry-button small { margin-top: 4px; color: rgba(240,246,255,.78); font-size: 12px; }
 .account-entry-arrow { font-size: 27px; opacity: .8; }
 .account-entry-note { margin: 18px 4px 0; color: var(--muted); font-size: 11px; line-height: 1.6; text-align: center; }
+
+
+/* =========================
+   게임 결과 내역
+========================= */
+.game-history-list { display: grid; gap: 12px; }
+.history-item {
+  padding: 17px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: linear-gradient(145deg, var(--surface-2), var(--surface));
+}
+.history-item-top, .history-detail-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.history-item-top { margin-bottom: 13px; }
+.history-item-top strong { font-size: 15px; }
+.history-time, .history-stats { color: var(--muted); font-size: 12px; }
+.history-detail-row { padding: 5px 0; }
+.history-detail-row > span { color: var(--muted); font-size: 13px; }
+.history-detail-row > strong { text-align: right; overflow-wrap: anywhere; }
+.history-profit { color: var(--green); }
+.history-loss { color: #ff8295; }
+.history-stats {
+  margin: 10px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid rgba(120, 145, 190, 0.15);
+}
+.history-empty {
+  padding: 24px 16px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  text-align: center;
+}
