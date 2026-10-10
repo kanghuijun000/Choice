@@ -1,6 +1,7 @@
 :root {
   color-scheme: dark;
-  --bg: #0b1020;
+  --bg: #24272b;
+  --bg-glow: #30353a;
   --surface: #151d30;
   --surface-2: #1d2940;
   --border: #2b3852;
@@ -26,7 +27,7 @@ body {
   margin: 0;
   min-height: 100vh;
   min-height: 100dvh;
-  background: radial-gradient(ellipse at top, #172744 0, transparent 55%), var(--bg);
+  background: radial-gradient(ellipse at top, var(--bg-glow) 0, transparent 55%), var(--bg);
   color: var(--text);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Noto Sans KR", sans-serif;
   font-size: 15px;
@@ -75,7 +76,7 @@ button:disabled {
   align-items: center;
   gap: 12px;
   /* 모바일 브라우저에서 스크롤 중 sticky + backdrop-filter가 화면을 깨뜨리는 현상 방지 */
-  background: #0b1020;
+  background: var(--bg);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
   border-bottom: 1px solid rgba(120, 145, 190, 0.12);
@@ -1232,3 +1233,96 @@ input::-webkit-inner-spin-button, input::-webkit-outer-spin-button {
   border-radius: var(--radius);
   text-align: center;
 }
+
+
+/* 설정: 3개 카테고리 */
+.settings-category-list {
+  display: grid;
+  gap: 10px;
+  margin: 2px 0 18px;
+}
+.settings-category-button {
+  width: 100%;
+  min-height: 72px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  background: var(--surface);
+}
+.settings-category-button.active {
+  border-color: #8b98ad;
+  background: var(--surface-2);
+}
+.settings-category-icon {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: rgba(255,255,255,.06);
+  font-size: 21px;
+}
+.settings-category-button > span:nth-child(2) { flex: 1; min-width: 0; }
+.settings-category-button strong,
+.settings-category-button small { display: block; }
+.settings-category-button strong { font-size: 14px; }
+.settings-category-button small { margin-top: 3px; color: var(--muted); font-size: 11px; }
+.settings-category-arrow { font-size: 25px; color: var(--muted); }
+.settings-category-panel > .panel { margin-bottom: 14px; }
+.settings-category-panel h3 { margin: 0 0 8px; font-size: 18px; }
+.settings-preferences-panel > .muted { font-size: 12px; }
+.background-theme-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 15px;
+}
+.background-theme-option {
+  min-height: 66px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255,255,255,.025);
+  text-align: left;
+  font-weight: 750;
+}
+.background-theme-option.active { border-color: #aab4c5; background: rgba(255,255,255,.07); }
+.theme-swatch { width: 30px; height: 30px; flex: 0 0 30px; border: 2px solid rgba(255,255,255,.55); border-radius: 9px; }
+.theme-graphite { background: #24272b; }
+.theme-cocoa { background: #2d2117; }
+.theme-plum { background: #302132; }
+.theme-stone { background: #35312a; }
+.settings-feedback { min-height: 18px; margin: 8px 0 0; color: var(--muted); font-size: 12px; }
+.settings-switch-row {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 16px 0 0 !important;
+  padding: 13px 0 2px;
+  border-top: 1px solid var(--border);
+}
+.settings-switch-row strong,
+.settings-switch-row small { display: block; }
+.settings-switch-row strong { color: var(--text); font-size: 14px; }
+.settings-switch-row small { margin-top: 3px; color: var(--muted); font-size: 11px; font-weight: 400; }
+.settings-switch-row input {
+  width: 23px;
+  height: 23px;
+  flex: 0 0 23px;
+  accent-color: #b4c0d1;
+}
+.reset-settings-panel > p { font-size: 13px; line-height: 1.65; }
+.reset-settings-panel > .muted { font-size: 12px; }
+:root[data-app-theme="graphite"] { --bg: #24272b; --bg-glow: #34383e; }
+:root[data-app-theme="cocoa"] { --bg: #2d2117; --bg-glow: #403023; }
+:root[data-app-theme="plum"] { --bg: #302132; --bg-glow: #433047; }
+:root[data-app-theme="stone"] { --bg: #35312a; --bg-glow: #484239; }
