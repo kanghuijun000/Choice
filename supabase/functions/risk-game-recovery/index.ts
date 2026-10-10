@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
   }
 
   const authorization = req.headers.get("Authorization") || "";
-  const token = authorization.replace(/^Bearer\\s+/i, "");
+  const token = authorization.replace(/^Bearer\s+/i, "");
   if (!token) return reply({ error: "로그인된 계정이 필요합니다." }, 401);
   const userClient = createClient(url, anonKey, {
     global: { headers: { Authorization: `Bearer ${token}` } },
