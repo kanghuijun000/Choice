@@ -620,7 +620,7 @@ function saveProfile() {
 function createProfile(name) {
   return {
     name,
-    code: String(Math.floor(Math.random() * 1000)).padStart(3, "0")
+    code: String(Math.floor(Math.random() * 10000)).padStart(4, "0")
   };
 }
 
@@ -711,6 +711,9 @@ $("saveProfileButton").addEventListener("click", () => {
   }
 
   renderProfile();
+  window.dispatchEvent(new CustomEvent("risk-game-profile-updated", {
+    detail: { name: profile.name, code: profile.code }
+  }));
   $("profileModal").classList.add("hidden");
 });
 
@@ -728,7 +731,8 @@ const TITLES = {
   summaryScreen: "게임 결과",
   shopScreen: "상점",
   settingsScreen: "설정",
-  moneyScreen: "돈 관리"
+  moneyScreen: "돈 관리",
+  friendScreen: "친구"
 };
 
 function showScreen(id) {
