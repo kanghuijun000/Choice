@@ -269,7 +269,7 @@
       <div class="panel recovery-panel" id="recoverySetupEntryPanel">
         <p class="eyebrow">ACCOUNT SECURITY</p>
         <h3>복구 비밀번호 처음 설정</h3>
-        <p class="muted">이미 이름과 고유 코드를 발급받았더라도 여기서 복구 비밀번호를 등록할 수 있습니다. 기존 계정과 게임 데이터는 초기화되지 않습니다.</p>
+        <p class="muted">처음 설정을 건너뛰었거나 이미 이름과 고유 코드를 발급받은 계정도 여기서 복구 비밀번호를 등록할 수 있습니다. 기존 계정과 게임 데이터는 초기화되지 않습니다.</p>
         <button id="openRecoverySetupButton" class="wide-button primary">복구 비밀번호 설정</button>
         <p id="openRecoverySetupMessage" class="recovery-message" role="status"></p>
       </div>
@@ -449,14 +449,14 @@
   <div class="modal-card profile-modal-card">
     <p class="eyebrow">STEP 2 / 2</p>
     <h2 id="recoverySetupTitle">복구 비밀번호 설정</h2>
-    <p class="muted">다른 기기에서 같은 계정을 되찾을 때 사용합니다. 12자 이상의 비밀번호를 입력하고 한 번 더 확인하세요.</p>
+    <p class="muted">복구 비밀번호를 설정해야 기기를 바꾸거나 게임 데이터를 잃었을 때 같은 계정을 다시 찾을 수 있습니다. 지금 설정하지 않으면 나중에 계정을 복구하지 못할 수 있습니다. 12자 이상의 비밀번호를 입력하고 한 번 더 확인하세요. 설정은 필수가 아니며 건너뛰어도 됩니다.</p>
     <label for="setupRecoveryPassword">복구 비밀번호</label>
     <input id="setupRecoveryPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128" placeholder="12자 이상 입력">
     <label for="setupRecoveryPasswordConfirm">복구 비밀번호 확인</label>
     <input id="setupRecoveryPasswordConfirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" placeholder="같은 비밀번호 다시 입력">
     <p id="setupRecoveryMessage" class="recovery-message" role="status"></p>
-    <button id="saveRecoverySetupButton" class="wide-button primary">비밀번호 설정 완료</button>
-    <button id="skipRecoverySetupButton" class="wide-button secondary">나중에 설정</button>
+    <button id="saveRecoverySetupButton" class="wide-button primary">확인 · 복구 비밀번호 설정</button>
+    <button id="skipRecoverySetupButton" class="wide-button secondary">건너뛰기</button>
   </div>
 </div>
 <div id="purchaseNotice" class="purchase-notice" role="status" aria-live="polite"></div>
