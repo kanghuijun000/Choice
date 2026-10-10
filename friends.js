@@ -16,6 +16,7 @@
   const $ = id => document.getElementById(id);
   let client = null;
   let currentUser = null;
+  let initialProfileCreationInProgress = false;
   let connectionErrorMessage = "";
   let connectingPromise = null;
   let busy = false;
@@ -419,16 +420,7 @@
         if (data.session?.user) {
           currentUser = data.session.user;
         } else {
-          const local = localProfile();
-          const { data: signed, error: signError } = await withTimeout(
-            client.auth.signInAnonymously({
-              options: { data: { display_name: String(local.name || "플레이어").trim().slice(0, 20) || "플레이어" } }
-            }),
-            "익명 계정 생성"
-          );
-          if (signError) throw signError;
-          currentUser = signed?.user || null;
-          if (!currentUser) throw new Error("익명 로그인 응답에 사용자 정보가 없습니다.");
+          throw new Error("온라인 계정이 연결되어 있지 않습니다. 신규 계정을 등록하거나 기존 계정 복구를 진행하세요.");
         }
         connectionErrorMessage = "";
         updateAccountUi();
@@ -600,6 +592,39 @@
       }
     });
 
+    window.addEventListener("risk-game-initial-profile-created", async () => {
+      if (!client || !configured || initialProfileCreationInProgress) return;
+      const local = localProfile();
+      const name = String(local.name || "").trim().slice(0, 20);
+      if (!name || !/^\d{4}$/.test(String(local.code || ""))) {
+        setMessage("신규 계정 정보가 올바르지 않습니다. 이름 등록을 다시 진행하세요.", true);
+        return;
+      }
+
+      initialProfileCreationInProgress = true;
+      try {
+        // 신규 등록을 완료한 경우에만 익명 인증 계정을 만듭니다.
+        // 이전 계정의 세션이 남아 있더라도 새 프로필을 그 계정에 덮어쓰지 않습니다.
+        try { await client.auth.signOut({ scope: "local" }); } catch {}
+        currentUser = null;
+        syncedUserId = null;
+        const { data: signed, error } = await withTimeout(client.auth.signInAnonymously({
+          options: { data: { display_name: name } }
+        }), "신규 온라인 계정 생성");
+        if (error) throw error;
+        currentUser = signed?.user || null;
+        if (!currentUser) throw new Error("신규 계정 생성 응답에 사용자 정보가 없습니다.");
+        updateAccountUi();
+        await withTimeout(refreshCloudData(), "신규 계정 프로필 생성");
+        setMessage("");
+      } catch (error) {
+        console.error("신규 온라인 계정 생성 실패:", error);
+        setMessage("이름은 이 기기에 저장됐지만 온라인 계정 생성에 실패했습니다: " + String(error?.message || "다시 시도하세요."), true);
+      } finally {
+        initialProfileCreationInProgress = false;
+      }
+    });
+
     window.addEventListener("risk-game-profile-updated", event => {
       updateCloudName(event.detail);
     });
@@ -643,7 +668,7 @@
       const previousUserId = currentUser?.id || null;
       currentUser = session?.user || null;
       updateAccountUi();
-      if (currentUser && currentUser.id !== previousUserId) {
+      if (currentUser && currentUser.id !== previousUserId && !initialProfileCreationInProgress) {
         window.setTimeout(() => {
           refreshCloudData().catch(error => {
             console.error("계정 전환 후 프로필 새로고침 실패:", error);
@@ -655,19 +680,18 @@
     (async () => {
       const { data, error } = await withTimeout(client.auth.getSession(), "온라인 계정 확인");
       if (error) throw error;
-      if (data.session) {
+      if (data.session?.user) {
         currentUser = data.session.user;
+        updateAccountUi();
+        await withTimeout(refreshCloudData(), "내 이름과 고유 코드 불러오기");
       } else {
-        // 사용자가 이메일/비밀번호를 입력하지 않아도 기기별 익명 계정을 자동 생성합니다.
-        const local = localProfile();
-        const { data: anonymousData, error: anonymousError } = await withTimeout(client.auth.signInAnonymously({
-          options: { data: { display_name: String(local.name || "플레이어").trim().slice(0, 20) || "플레이어" } }
-        }), "익명 계정 생성");
-        if (anonymousError) throw anonymousError;
-        currentUser = anonymousData.user;
+        // 계정 선택 화면에 들어왔다는 이유만으로 익명 계정이나 프로필을 만들지 않습니다.
+        // 신규 계정 등록 완료 이벤트에서만 명시적으로 계정을 생성합니다.
+        currentUser = null;
+        updateAccountUi();
+        const code = $("friendMyCode");
+        if (code) code.textContent = "계정 등록 후 표시됩니다.";
       }
-      updateAccountUi();
-      await withTimeout(refreshCloudData(), "내 이름과 고유 코드 불러오기");
     })().catch(error => {
       console.error("온라인 친구 기능 연결 실패:", error);
       const message = String(error?.message || "");
