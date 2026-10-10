@@ -16,6 +16,8 @@
   const $ = id => document.getElementById(id);
   let client = null;
   let currentUser = null;
+  let connectionErrorMessage = "";
+  let connectingPromise = null;
   let busy = false;
   let syncedUserId = null;
   let activeRequestModalId = null;
@@ -293,10 +295,66 @@
     }
   }
 
+  async function reconnectOnline() {
+    if (currentUser) return true;
+    if (!configured || !client) {
+      connectionErrorMessage = "Supabase 설정 또는 라이브러리를 확인할 수 없습니다.";
+      setMessage(connectionErrorMessage, true);
+      return false;
+    }
+    if (connectingPromise) return connectingPromise;
+    connectingPromise = (async () => {
+      try {
+        setMessage("온라인 계정에 다시 연결하고 있습니다...");
+        const { data, error } = await withTimeout(client.auth.getSession(), "온라인 계정 확인");
+        if (error) throw error;
+        if (data.session?.user) {
+          currentUser = data.session.user;
+        } else {
+          const local = localProfile();
+          const { data: signed, error: signError } = await withTimeout(
+            client.auth.signInAnonymously({
+              options: { data: { display_name: String(local.name || "플레이어").trim().slice(0, 20) || "플레이어" } }
+            }),
+            "익명 계정 생성"
+          );
+          if (signError) throw signError;
+          currentUser = signed?.user || null;
+          if (!currentUser) throw new Error("익명 로그인 응답에 사용자 정보가 없습니다.");
+        }
+        connectionErrorMessage = "";
+        updateAccountUi();
+        await withTimeout(refreshCloudData(), "내 이름과 고유 코드 불러오기");
+        if (!currentUser) throw new Error("온라인 사용자 정보가 유지되지 않았습니다. 페이지를 새로고침해 다시 시도하세요.");
+        setMessage("");
+        return true;
+      } catch (error) {
+        console.error("온라인 계정 재연결 실패:", error);
+        connectionErrorMessage = String(error?.message || "알 수 없는 연결 오류");
+        const lower = connectionErrorMessage.toLowerCase();
+        if (lower.includes("anonymous") || lower.includes("disabled")) {
+          connectionErrorMessage = "익명 로그인이 거부되었습니다. Supabase Authentication 설정에서 Anonymous Sign-Ins가 활성화되어 있는지 확인하세요. 원인: " + connectionErrorMessage;
+        }
+        setMessage("온라인 연결 실패: " + connectionErrorMessage, true);
+        const status = $("friendCloudStatus");
+        if (status) status.textContent = "온라인 연결 실패";
+        const code = $("friendMyCode");
+        if (code && (code.textContent === "불러오는 중..." || code.textContent === "연결 실패")) code.textContent = "연결 실패";
+        return false;
+      } finally {
+        connectingPromise = null;
+      }
+    })();
+    return connectingPromise;
+  }
+
   async function addFriend() {
     if (busy) return;
     if (!client || !currentUser) {
-      return setMessage("친구 요청을 보내려면 먼저 온라인 계정으로 로그인하세요.", true);
+      const connected = await reconnectOnline();
+      if (!connected || !currentUser) {
+        return setMessage("온라인 계정에 연결되지 않아 친구 요청을 보낼 수 없습니다. 연결 오류: " + (connectionErrorMessage || "오류 메시지 없음"), true);
+      }
     }
     const name = $("friendNameInput").value.trim();
     const code = $("friendCodeOnlyInput").value.trim();
@@ -437,11 +495,12 @@
     $("friendRequestModalLater").addEventListener("click", closeRequestModal);
 
     $("friendMenuButton").addEventListener("click", async () => {
-      setMessage("");
       if (!configured) {
         setMessage("온라인 연결 설정을 확인해야 합니다.", true);
       } else if (currentUser) {
         await refreshCloudData();
+      } else {
+        await reconnectOnline();
       }
     });
 
@@ -491,6 +550,7 @@
     })().catch(error => {
       console.error("온라인 친구 기능 연결 실패:", error);
       const message = String(error?.message || "");
+      connectionErrorMessage = message || "잠시 후 다시 시도하세요.";
       if (/anonymous|disabled/i.test(message)) {
         setMessage("Supabase 설정에서 익명 로그인을 한 번 켜야 합니다. 설정 후 새로고침하면 자동으로 연결됩니다.", true);
       } else if (/sync_risk_game_profile|function .* does not exist|schema cache/i.test(message)) {
