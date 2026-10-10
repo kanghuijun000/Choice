@@ -682,12 +682,12 @@ function openProfileEditor(initialSetup = false) {
   $("profileModal").classList.remove("hidden");
   $("profileModalTitle").textContent = initialSetup ? "이름 등록" : "이름 변경";
   $("profileModalDescription").textContent = initialSetup
-    ? "처음 시작하기 전에 사용할 이름을 등록하세요. 등록 후 무작위 숫자 코드가 부여됩니다."
+    ? "처음 시작하기 전에 사용할 이름을 등록하세요. 온라인 계정 연결 후 고유한 4자리 코드가 부여됩니다."
     : "이름만 변경됩니다. 기존 숫자 코드는 그대로 유지됩니다.";
   $("profileNameInput").value = profile ? profile.name : "";
   $("profileCodePreview").textContent = profile
     ? "내 코드: #" + profile.code
-    : "등록 후 #숫자 코드가 부여됩니다.";
+    : "온라인 계정 연결 후 4자리 코드가 부여됩니다.";
   $("saveProfileButton").textContent = initialSetup ? "등록하기" : "변경 저장";
   $("cancelProfileButton").classList.toggle("hidden", initialSetup);
   $("profileModal").dataset.initialSetup = initialSetup ? "true" : "false";
