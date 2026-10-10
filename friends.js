@@ -44,7 +44,7 @@
 
   function setBusy(value) {
     busy = value;
-    ["addFriendButton"]
+    ["addFriendButton", "refreshFriendsButton"]
       .forEach(id => {
         const button = $(id);
         if (button) button.disabled = value;
@@ -330,6 +330,31 @@
     renderedFriendsSignature = signature;
   }
 
+  async function refreshFriendLists() {
+    const button = $("refreshFriendsButton");
+    if (busy) return;
+    setBusy(true);
+    setMessage("");
+    if (button) button.textContent = "새로고침 중...";
+    try {
+      if (!client || !currentUser) {
+        const connected = await reconnectOnline();
+        if (!connected || !currentUser) {
+          throw new Error("온라인 연결에 실패했습니다. 잠시 후 다시 시도하세요.");
+        }
+      }
+      await syncMyPresence(true);
+      await Promise.all([loadFriends(), loadRequests()]);
+      setMessage("친구 목록과 받은 친구 요청을 새로고침했습니다.");
+    } catch (error) {
+      console.error("친구 목록 수동 새로고침 실패:", error);
+      setMessage("새로고침에 실패했습니다: " + String(error?.message || "알 수 없는 오류"), true);
+    } finally {
+      if (button) button.textContent = "새로고침";
+      setBusy(false);
+    }
+  }
+
   async function refreshCloudData() {
     if (!client || !currentUser) {
       updateAccountUi();
@@ -563,10 +588,12 @@
     window.addEventListener("risk-game-budget-updated", () => {
       syncMyPresence();
     });
+    $("refreshFriendsButton").addEventListener("click", refreshFriendLists);
+
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible") {
+        // 내 접속 신호는 유지하되, 친구 목록은 사용자가 버튼을 눌렀을 때만 갱신합니다.
         syncMyPresence(true);
-        loadFriends().catch(error => console.error("친구 목록 새로고침 실패:", error));
       }
     });
 
@@ -574,10 +601,8 @@
     loadRequests().catch(error => console.error("친구 요청 불러오기 실패:", error));
     window.setInterval(() => {
       if (currentUser) {
-        // 화면이 보이는 동안 온라인 상태와 예산, 친구 목록을 동기화합니다.
+        // 친구 목록 자동 갱신은 하지 않고, 내 온라인 상태 유지를 위한 신호만 보냅니다.
         syncMyPresence().catch(() => {});
-        loadFriends().catch(error => console.error("친구 목록 자동 새로고침 실패:", error));
-        loadRequests().catch(error => console.error("친구 요청 새로고침 실패:", error));
       }
     }, 5000);
 
