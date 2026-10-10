@@ -20,8 +20,16 @@ create table if not exists public.user_friends (
 create index if not exists user_friends_friend_id_idx
   on public.user_friends(friend_id);
 
+-- 코드 조회를 무작위 대입하는 일을 줄이기 위한 사용자별 제한 카운터
+create table if not exists public.friend_lookup_limits (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  window_started_at timestamptz not null default now(),
+  attempts integer not null default 0
+);
+
 alter table public.profiles enable row level security;
 alter table public.user_friends enable row level security;
+alter table public.friend_lookup_limits enable row level security;
 
 drop policy if exists "profiles_select_self_or_friends" on public.profiles;
 create policy "profiles_select_self_or_friends"
@@ -101,21 +109,52 @@ create trigger on_auth_user_created_risk_game
 -- 친구 코드와 이름이 모두 일치하는 계정만 반환합니다.
 create or replace function public.lookup_risk_game_friend(p_name text, p_code text)
 returns table (id uuid, display_name text, friend_code text)
-language sql
-stable
+language plpgsql
 security definer
 set search_path = ''
-as $$
-  select p.id, p.display_name, p.friend_code
-  from public.profiles p
-  where auth.uid() is not null
-    and p.display_name = left(trim(p_name), 20)
-    and p.friend_code = p_code
-  limit 1;
-$$;
+as $
+declare
+  current_attempts integer;
+begin
+  if auth.uid() is null then
+    return;
+  end if;
+
+  insert into public.friend_lookup_limits (user_id, window_started_at, attempts)
+  values (auth.uid(), now(), 1)
+  on conflict (user_id) do update
+    set attempts = case
+      when public.friend_lookup_limits.window_started_at < now() - interval '10 minutes'
+        then 1
+      else public.friend_lookup_limits.attempts + 1
+    end,
+    window_started_at = case
+      when public.friend_lookup_limits.window_started_at < now() - interval '10 minutes'
+        then now()
+      else public.friend_lookup_limits.window_started_at
+    end
+  returning attempts into current_attempts;
+
+  -- 10분에 20회까지만 코드 조회를 허용합니다.
+  if current_attempts > 20 then
+    return;
+  end if;
+
+  return query
+    select p.id, p.display_name, p.friend_code
+    from public.profiles p
+    where p.display_name = left(trim(p_name), 20)
+      and p.friend_code = p_code
+    limit 1;
+end;
+$;
 
 revoke all on function public.lookup_risk_game_friend(text, text) from public, anon;
 grant execute on function public.lookup_risk_game_friend(text, text) to authenticated;
+
+revoke all on public.profiles from anon, authenticated;
+revoke all on public.user_friends from anon, authenticated;
+revoke all on public.friend_lookup_limits from anon, authenticated;
 
 grant select on public.profiles to authenticated;
 grant update (display_name) on public.profiles to authenticated;
