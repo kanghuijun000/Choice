@@ -112,7 +112,7 @@ returns table (id uuid, display_name text, friend_code text)
 language plpgsql
 security definer
 set search_path = ''
-as $
+as $$
 declare
   current_attempts integer;
 begin
@@ -147,7 +147,7 @@ begin
       and p.friend_code = p_code
     limit 1;
 end;
-$;
+$$;
 
 revoke all on function public.lookup_risk_game_friend(text, text) from public, anon;
 grant execute on function public.lookup_risk_game_friend(text, text) to authenticated;
@@ -161,3 +161,65 @@ grant update (display_name) on public.profiles to authenticated;
 grant select, insert, delete on public.user_friends to authenticated;
 
 -- 새로 만든 함수와 테이블은 인증 사용자에게만 필요한 권한을 줍니다.
+
+
+-- 받은 친구 요청
+create table if not exists public.friend_requests (
+  id uuid primary key default gen_random_uuid(),
+  sender_id uuid not null references auth.users(id) on delete cascade,
+  receiver_id uuid not null references auth.users(id) on delete cascade,
+  sender_name text not null check (char_length(sender_name) between 1 and 20),
+  sender_code text not null check (sender_code ~ '^\d{4}$'),
+  status text not null default 'pending' check (status in ('pending', 'accepted', 'declined')),
+  created_at timestamptz not null default now(),
+  constraint friend_requests_no_self check (sender_id <> receiver_id)
+);
+
+create index if not exists friend_requests_receiver_status_idx
+  on public.friend_requests(receiver_id, status, created_at);
+create unique index if not exists friend_requests_one_pending_pair_idx
+  on public.friend_requests(sender_id, receiver_id) where status = 'pending';
+
+alter table public.friend_requests enable row level security;
+drop policy if exists "friend_requests_select_participant" on public.friend_requests;
+create policy "friend_requests_select_participant"
+  on public.friend_requests for select to authenticated
+  using (sender_id = (select auth.uid()) or receiver_id = (select auth.uid()));
+drop policy if exists "friend_requests_insert_sender" on public.friend_requests;
+create policy "friend_requests_insert_sender"
+  on public.friend_requests for insert to authenticated
+  with check (sender_id = (select auth.uid()) and receiver_id <> (select auth.uid()) and status = 'pending');
+
+revoke all on public.friend_requests from anon, authenticated;
+grant select, insert on public.friend_requests to authenticated;
+
+create or replace function public.accept_risk_game_friend_request(p_request_id uuid)
+returns void language plpgsql security definer set search_path = ''
+as $$
+declare requester_id uuid;
+begin
+  update public.friend_requests set status = 'accepted'
+    where id = p_request_id and receiver_id = auth.uid() and status = 'pending'
+    returning sender_id into requester_id;
+  if requester_id is null then raise exception '처리할 수 있는 친구 요청이 없습니다.'; end if;
+  insert into public.user_friends(user_id, friend_id) values (auth.uid(), requester_id) on conflict do nothing;
+  insert into public.user_friends(user_id, friend_id) values (requester_id, auth.uid()) on conflict do nothing;
+end;
+$$;
+
+create or replace function public.decline_risk_game_friend_request(p_request_id uuid)
+returns void language plpgsql security definer set search_path = ''
+as $$
+declare changed_count integer;
+begin
+  update public.friend_requests set status = 'declined'
+    where id = p_request_id and receiver_id = auth.uid() and status = 'pending';
+  get diagnostics changed_count = row_count;
+  if changed_count = 0 then raise exception '처리할 수 있는 친구 요청이 없습니다.'; end if;
+end;
+$$;
+
+revoke all on function public.accept_risk_game_friend_request(uuid) from public, anon;
+revoke all on function public.decline_risk_game_friend_request(uuid) from public, anon;
+grant execute on function public.accept_risk_game_friend_request(uuid) to authenticated;
+grant execute on function public.decline_risk_game_friend_request(uuid) to authenticated;
