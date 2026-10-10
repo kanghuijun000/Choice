@@ -251,44 +251,110 @@ function samePair(a, b) {
   return aIds === bIds;
 }
 
-function generateChoices(previous = null, count = 2, safeBoost = false) {
-  for (let attempt = 0; attempt < 120; attempt++) {
-    const safePool = SAFE_CHOICES
-      .filter(choice => count === 3 || choice.penaltyType !== "forceGreen")
-      .map(choice => ({ ...choice }));
+function estimateChoiceValue(choice) {
+  // 선택 즉시 효과와 패널티의 기대값을 같은 기준(금액 배율)으로 환산합니다.
+  const baseMultiplier = choice.effect < 0
+    ? 1 - Math.abs(choice.effect) / 100
+    : 1 + choice.effect / 100;
 
-    if (safeBoost) {
-      const extra = SAFE_CHOICES.find(choice => choice.id === "safeNoPenalty");
-      if (extra) safePool.push({ ...extra }, { ...extra });
-    }
+  const chance = Math.max(0, Math.min(100, choice.penaltyChance || 0)) / 100;
+  let penaltyMultiplier = 1;
 
-    const safe = randomItem(safePool);
-    const risky = randomItem(RISKY_CHOICES);
-    let result = shuffledPair(safe, { ...risky });
-
-    if (count === 3) {
-      const used = new Set(result.map(choice => choice.id));
-      const remaining = [...SAFE_CHOICES, ...RISKY_CHOICES]
-        .filter(choice => !used.has(choice.id));
-
-      result.push({ ...randomItem(remaining) });
-
-      if (Math.random() < 0.5) {
-        result = [result[0], result[2], result[1]];
-      }
-    }
-
-    if (!samePair(result, previous)) return result;
+  switch (choice.penaltyType) {
+    case "loss10":
+      penaltyMultiplier = 1 - chance * 0.10;
+      break;
+    case "loss25":
+      penaltyMultiplier = 1 - chance * 0.25;
+      break;
+    case "loss50":
+      penaltyMultiplier = 1 - chance * 0.50;
+      break;
+    case "totalLoss":
+      penaltyMultiplier = 1 - chance;
+      break;
+    case "forceBlue":
+    case "forceRed":
+    case "forceGreen":
+      // 강제 색상은 다음 턴의 선택 폭을 줄이므로 작은 기대 비용으로 반영합니다.
+      penaltyMultiplier = 1 - chance * 0.06;
+      break;
   }
 
-  const fallback = shuffledPair(
-    { ...SAFE_CHOICES[0] },
-    { ...RISKY_CHOICES[0] }
-  );
+  let multiplier = baseMultiplier * penaltyMultiplier;
 
-  if (count === 3) fallback.push({ ...SAFE_CHOICES[1] });
+  // 보너스는 미래 선택지 구성에 좌우되므로 과대평가하지 않고 완만하게 반영합니다.
+  if (choice.bonusType === "reduceLoss") {
+    multiplier += Math.min(10, choice.bonusTurns || 5) * 0.012;
+  } else if (choice.bonusType === "safePositive") {
+    multiplier += Math.min(10, choice.bonusTurns || 10) * 0.006;
+  }
 
-  return fallback;
+  return (multiplier - 1) * 100;
+}
+
+function generateChoices(previous = null, count = 2, safeBoost = false) {
+  const targetCount = count === 3 ? 3 : 2;
+  const pool = [...SAFE_CHOICES, ...RISKY_CHOICES]
+    .filter(choice => targetCount === 3 || choice.penaltyType !== "forceGreen");
+
+  // 보너스가 활성화되면 무패널티 선택지가 더 자주 등장하도록 가중치를 줍니다.
+  if (safeBoost) {
+    const safeChoice = SAFE_CHOICES.find(choice => choice.id === "safeNoPenalty");
+    if (safeChoice) pool.push(safeChoice, safeChoice);
+  }
+
+  const unique = new Map();
+  pool.forEach(choice => unique.set(choice.id, choice));
+  const candidates = [...unique.values()];
+  const valueById = new Map(candidates.map(choice => [
+    choice.id,
+    estimateChoiceValue(choice)
+  ]));
+
+  // 가능한 조합을 전부 평가해 선택지끼리의 기대값 격차가 과도한 조합을 피합니다.
+  const combinations = [];
+  function build(startIndex, picked) {
+    if (picked.length === targetCount) {
+      const values = picked.map(choice => valueById.get(choice.id));
+      const spread = Math.max(...values) - Math.min(...values);
+      combinations.push({
+        choices: picked.slice(),
+        spread,
+        previous: samePair(picked, previous)
+      });
+      return;
+    }
+
+    for (let i = startIndex; i < candidates.length; i++) {
+      const choice = candidates[i];
+      if (picked.some(item => item.id === choice.id)) continue;
+      picked.push(choice);
+      build(i + 1, picked);
+      picked.pop();
+    }
+  }
+  build(0, []);
+
+  const fresh = combinations.filter(item => !item.previous);
+  const available = fresh.length ? fresh : combinations;
+  const maxSpread = targetCount === 3 ? 95 : 65;
+  let eligible = available.filter(item => item.spread <= maxSpread);
+
+  // 극단적인 선택지가 포함돼 조건을 만족하는 조합이 없을 때도,
+  // 목표 개수는 유지하면서 가장 균형 잡힌 조합 중 하나를 고릅니다.
+  if (!eligible.length) {
+    const bestSpread = Math.min(...available.map(item => item.spread));
+    eligible = available.filter(item => item.spread <= bestSpread + 8);
+  }
+
+  // 조합의 다양성을 유지하되, 가중치가 반영된 후보 풀에서 무작위로 선택합니다.
+  const selected = randomItem(eligible).choices.map(choice => ({ ...choice }));
+  for (let i = selected.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [selected[i], selected[j]] = [selected[j], selected[i]];
+  }
+  return selected;
 }
 
 function findChoice(id) {
