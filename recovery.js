@@ -165,6 +165,7 @@
     restoreInProgress = true;
     setBusy(["restoreRecoveryAccountButton"], true);
     message("restoreRecoveryMessage", "계정을 확인하고 있습니다. 복구가 완료되면 기존 기기는 계정 선택 화면으로 돌아갑니다.");
+    let deviceClaimed = false;
     try {
       const found = await invoke("lookup", { password });
       if (!found.email) throw new Error("복구 비밀번호가 일치하는 계정을 찾지 못했습니다.");
@@ -178,8 +179,6 @@
 
       const deviceId = getDeviceId();
       // 권한 이전 뒤 데이터 로드가 실패해도 같은 기기에서 복구를 재시도할 수 있습니다.
-      // claim 성공 여부를 기록해 실패 원인을 사용자에게 분명히 안내합니다.
-      let deviceClaimed = false;
       await invoke("claim_device", { deviceId, password });
       deviceClaimed = true;
       const result = await invoke("load_state", { deviceId });
@@ -203,7 +202,7 @@
       // 기기 권한을 이전한 뒤 오류가 나면 권한을 되돌리려 하지 않습니다.
       // 같은 기기에서 다시 시도하면 해당 기기가 현재 소유 기기이므로 데이터 로드를 재시도할 수 있습니다.
       message("restoreRecoveryMessage",
-        typeof deviceClaimed !== "undefined" && deviceClaimed
+        deviceClaimed
           ? "기기 연결은 완료됐지만 데이터 복구가 끝나지 않았습니다. 데이터는 서버에 남아 있습니다. 같은 기기에서 계정 복구를 다시 눌러 재시도하세요. (" + detail + ")"
           : detail,
         true);
