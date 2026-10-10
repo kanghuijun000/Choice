@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#182746"/>
+      <stop offset="1" stop-color="#080d1b"/>
+    </linearGradient>
+    <linearGradient id="die" x1="0" y1="0" x2="0.9" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#dce5f4"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="14" stdDeviation="13" flood-color="#000000" flood-opacity=".38"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <circle cx="256" cy="256" r="184" fill="#263b61" opacity=".42"/>
+  <g transform="rotate(-12 256 256)" filter="url(#shadow)">
+    <rect x="112" y="112" width="288" height="288" rx="58" fill="url(#die)"/>
+    <rect x="112" y="112" width="288" height="288" rx="58" fill="none" stroke="#ffffff" stroke-opacity=".75" stroke-width="5"/>
+    <circle cx="181" cy="181" r="25" fill="#e04452"/>
+    <circle cx="331" cy="181" r="25" fill="#2878ed"/>
+    <circle cx="256" cy="256" r="25" fill="#182746"/>
+    <circle cx="181" cy="331" r="25" fill="#2878ed"/>
+    <circle cx="331" cy="331" r="25" fill="#28a879"/>
+  </g>
+  <path d="M363 76l10 27 27 10-27 10-10 27-10-27-27-10 27-10z" fill="#ffd166"/>
+</svg>
