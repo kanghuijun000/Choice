@@ -767,6 +767,8 @@ $("changeProfileNameButton").addEventListener("click", () => openProfileEditor(f
 ========================= */
 
 const TITLES = {
+  accountChoiceScreen: "계정 시작",
+  restoreScreen: "기존 계정 복구",
   homeScreen: "리스크 게임",
   amountScreen: "게임 금액 설정",
   gameScreen: "게임",
@@ -794,6 +796,7 @@ function showScreen(id) {
   $("backButton").classList.toggle(
     "hidden",
     id === "homeScreen" ||
+    id === "accountChoiceScreen" ||
     id === "gameScreen" ||
     id === "summaryScreen" ||
     Boolean(state.activeGame) ||
@@ -818,12 +821,28 @@ function showScreen(id) {
   window.scrollTo(0, 0);
 }
 
+$("newAccountButton").addEventListener("click", () => {
+  // 신규 계정 흐름을 시작하되 게임 진행 데이터는 초기화하지 않습니다.
+  profile = null;
+  $("profileNameInput").value = "";
+  showScreen("homeScreen");
+  openProfileEditor(true);
+});
+
+$("openRestoreScreenButton").addEventListener("click", () => showScreen("restoreScreen"));
+
 document.querySelectorAll("[data-screen]").forEach(button => {
   button.addEventListener("click", () => showScreen(button.dataset.screen));
 });
 
 $("backButton").addEventListener("click", () => {
   if (state.activeGame || state.pendingSummary) return;
+  if (currentScreen === "restoreScreen") {
+    $("restoreRecoveryMessage").textContent = "";
+    $("restoreRecoveryPassword").value = "";
+    showScreen("accountChoiceScreen");
+    return;
+  }
   showScreen("homeScreen");
 });
 
@@ -1897,12 +1916,10 @@ function initializeApp() {
   } else if (state.activeGame) {
     showScreen("gameScreen");
   } else {
-    showScreen("homeScreen");
+    showScreen("accountChoiceScreen");
   }
 
   saveState();
-
-  if (!profile) openProfileEditor(true);
 }
 
 setInterval(() => {
