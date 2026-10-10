@@ -17,7 +17,7 @@
   }
 
   function passwordValid(value) {
-    return typeof value === "string" && value.length >= 12 && value.length <= 128;
+    return typeof value === "string" && value.length >= 10 && value.length <= 128;
   }
 
   async function invoke(action, extra = {}) {
@@ -49,7 +49,7 @@
     const password = $("setupRecoveryPassword").value;
     const confirm = $("setupRecoveryPasswordConfirm").value;
     if (!passwordValid(password)) {
-      message("setupRecoveryMessage", "비밀번호는 12~128자로 입력하세요.", true);
+      message("setupRecoveryMessage", "비밀번호는 10~128자로 입력하세요.", true);
       return;
     }
     if (password !== confirm) {
@@ -86,7 +86,7 @@
       return;
     }
     if (!passwordValid(password)) {
-      message("changeRecoveryMessage", "새 비밀번호는 12~128자로 입력하세요.", true);
+      message("changeRecoveryMessage", "새 비밀번호는 10~128자로 입력하세요.", true);
       return;
     }
     if (password !== confirm) {
@@ -113,7 +113,7 @@
     if (restoreInProgress) return;
     const password = $("restoreRecoveryPassword").value;
     if (!passwordValid(password)) {
-      message("restoreRecoveryMessage", "복구 비밀번호를 12자 이상 입력하세요.", true);
+      message("restoreRecoveryMessage", "복구 비밀번호를 10자 이상 입력하세요.", true);
       return;
     }
 
