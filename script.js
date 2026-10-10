@@ -633,6 +633,23 @@ function createProfile(name) {
 let profile = loadProfile();
 let state = loadState();
 window.riskGameGetBudget = () => state.budget;
+window.riskGameGetState = () => JSON.parse(JSON.stringify(state));
+window.riskGameApplyCloudState = cloudState => {
+  if (!cloudState || typeof cloudState !== "object" || Array.isArray(cloudState)) return false;
+  try {
+    state = normalizeState(cloudState);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem("risk-game-local-updated-at", String(Date.now()));
+    updateAll();
+    if (state.pendingSummary) showScreen("summaryScreen");
+    else if (state.activeGame) showScreen("gameScreen");
+    else showScreen("homeScreen");
+    return true;
+  } catch (error) {
+    console.error("클라우드 게임 데이터 적용 실패:", error);
+    return false;
+  }
+};
 let currentScreen = "homeScreen";
 let currentBankTab = "bank";
 let moneyModalMode = null;
@@ -643,7 +660,9 @@ let lastActiveTick =
 function saveState() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem("risk-game-local-updated-at", String(Date.now()));
     window.dispatchEvent(new Event("risk-game-budget-updated"));
+    window.dispatchEvent(new CustomEvent("risk-game-state-updated"));
     $("saveStatus").textContent = "저장됨";
     $("saveStatus").style.color = "var(--green)";
     return true;
