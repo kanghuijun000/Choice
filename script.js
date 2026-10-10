@@ -1174,7 +1174,7 @@ $("confirmModal").addEventListener("click", event => {
 
 function limitUpgrade() {
   let increment = 5000;
-  let cost = 50000;
+  let cost = 25000;
 
   while (
     state.gameLimit >= increment * 10 &&
@@ -1382,7 +1382,7 @@ function resetBankMinute() {
 }
 
 function bankRateUpgradeCost() {
-  return state.bankRate >= 10 ? 0 : state.bankRate * 1000000;
+  return state.bankRate >= 10 ? 0 : state.bankRate * 100000;
 }
 
 function updateBank() {
