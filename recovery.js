@@ -187,12 +187,12 @@
       } else {
         $("restoreRecoveryPassword").value = "";
         message("restoreRecoveryMessage", "계정은 복구했지만 서버에 저장된 게임 데이터가 없어 현재 기기의 게임 데이터는 유지했습니다.");
-        await saveCloudState();
       }
       localStorage.removeItem(DISPLACED_KEY);
       localStorage.setItem(RECOVERY_ENABLED_KEY, "true");
       deviceVerified = true;
       displacementHandled = false;
+      if (!result.payload) await saveCloudState();
       window.dispatchEvent(new Event("risk-game-account-restored"));
     } catch (error) {
       message("restoreRecoveryMessage", String(error?.message || "계정 복구에 실패했습니다."), true);
@@ -209,6 +209,9 @@
       await invoke("save_state", { payload: window.riskGameGetState(), deviceId: getDeviceId() });
     } catch (error) {
       console.error("게임 데이터 클라우드 저장 실패:", error);
+      if (String(error?.message || "").includes("다른 기기에서 이 계정을 복구했습니다")) {
+        handleDeviceDisplaced();
+      }
     }
   }
 
