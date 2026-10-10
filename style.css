@@ -964,3 +964,136 @@ input::-webkit-inner-spin-button, input::-webkit-outer-spin-button {
   font-weight: 800;
   overflow-wrap: anywhere;
 }
+
+
+/* 친구 및 온라인 계정 */
+.friend-account-panel,
+.friend-add-panel {
+  margin-bottom: 14px;
+}
+.friend-account-panel h3,
+.friend-list-heading h3 {
+  margin: 0;
+  font-size: 18px;
+}
+.friend-account-panel > .muted {
+  font-size: 12px;
+}
+#friendAuthPanel label,
+.friend-add-panel label {
+  display: block;
+  margin: 13px 0 6px;
+  color: #cbd7ed;
+  font-size: 13px;
+  font-weight: 700;
+}
+#friendEmail,
+#friendPassword,
+#friendCodeInput {
+  width: 100%;
+  min-height: 46px;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #0c1425;
+  color: var(--text);
+}
+.friend-auth-buttons {
+  margin-top: 14px;
+}
+.friend-message {
+  min-height: 20px;
+  margin: 10px 0 0;
+  color: var(--green);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.friend-message.friend-error {
+  color: #ff7287;
+}
+#friendSignOutButton {
+  margin-top: 12px;
+}
+.friend-list-section {
+  margin-top: 22px;
+}
+.friend-list-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.friend-list-heading > span {
+  font-size: 11px;
+}
+.friend-list {
+  display: grid;
+  gap: 9px;
+}
+.friend-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+.friend-row-details {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.friend-row-details strong {
+  overflow-wrap: anywhere;
+}
+.friend-row-details span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.friend-remove-button {
+  flex: 0 0 auto;
+  padding: 8px 11px;
+  border: 1px solid rgba(240,79,104,.4);
+  border-radius: 10px;
+  background: rgba(240,79,104,.12);
+  color: #ff8798;
+  font-size: 12px;
+  font-weight: 800;
+}
+.friend-empty {
+  margin: 0;
+  padding: 18px 12px;
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  text-align: center;
+  font-size: 13px;
+}
+.friend-data-note {
+  margin: 16px 2px 0;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+
+/* 받은 친구 요청 */
+.friend-requests-section { margin-top: 20px; }
+.friend-request-row { align-items: center; }
+.friend-request-actions { display: flex; flex: 0 0 auto; gap: 6px; }
+.friend-request-actions button {
+  min-height: 38px; padding: 8px 11px; border-radius: 10px;
+  font-size: 12px; font-weight: 800;
+}
+.friend-request-accept {
+  border: 1px solid #2fbd8b; background: rgba(48,196,141,.16); color: #69e6b6;
+}
+.friend-request-decline {
+  border: 1px solid rgba(240,79,104,.4); background: rgba(240,79,104,.12); color: #ff8798;
+}
+@media (max-width: 360px) {
+  .friend-request-row { align-items: flex-start; flex-direction: column; }
+  .friend-request-actions { width: 100%; }
+  .friend-request-actions button { flex: 1; }
+}

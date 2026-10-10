@@ -600,7 +600,7 @@ function loadProfile() {
     if (!parsed || typeof parsed !== "object") return null;
     const name = String(parsed.name || "").trim();
     const code = String(parsed.code || "");
-    if (!name || !/^\d{3}$/.test(code)) return null;
+    if (!name || !/^\d{3,4}$/.test(code)) return null;
     return { name: name.slice(0, 20), code };
   } catch {
     return null;
@@ -620,7 +620,7 @@ function saveProfile() {
 function createProfile(name) {
   return {
     name,
-    code: String(Math.floor(Math.random() * 1000)).padStart(3, "0")
+    code: String(Math.floor(Math.random() * 10000)).padStart(4, "0")
   };
 }
 
@@ -666,17 +666,28 @@ function renderProfile() {
   $("profileDisplayCode").textContent = displayCode;
 }
 
+window.riskGameApplyCloudProfile = cloudProfile => {
+  if (!cloudProfile || typeof cloudProfile.display_name !== "string" ||
+      !/^\d{4}$/.test(String(cloudProfile.friend_code || ""))) return;
+  profile = {
+    name: cloudProfile.display_name.trim().slice(0, 20) || "플레이어",
+    code: String(cloudProfile.friend_code)
+  };
+  saveProfile();
+  renderProfile();
+};
+
 function openProfileEditor(initialSetup = false) {
   $("profileError").textContent = "";
   $("profileModal").classList.remove("hidden");
   $("profileModalTitle").textContent = initialSetup ? "이름 등록" : "이름 변경";
   $("profileModalDescription").textContent = initialSetup
-    ? "처음 시작하기 전에 사용할 이름을 등록하세요. 등록 후 무작위 숫자 코드가 부여됩니다."
+    ? "처음 시작하기 전에 사용할 이름을 등록하세요. 온라인 계정 연결 후 고유한 4자리 코드가 부여됩니다."
     : "이름만 변경됩니다. 기존 숫자 코드는 그대로 유지됩니다.";
   $("profileNameInput").value = profile ? profile.name : "";
   $("profileCodePreview").textContent = profile
     ? "내 코드: #" + profile.code
-    : "등록 후 #숫자 코드가 부여됩니다.";
+    : "온라인 계정 연결 후 4자리 코드가 부여됩니다.";
   $("saveProfileButton").textContent = initialSetup ? "등록하기" : "변경 저장";
   $("cancelProfileButton").classList.toggle("hidden", initialSetup);
   $("profileModal").dataset.initialSetup = initialSetup ? "true" : "false";
@@ -711,6 +722,9 @@ $("saveProfileButton").addEventListener("click", () => {
   }
 
   renderProfile();
+  window.dispatchEvent(new CustomEvent("risk-game-profile-updated", {
+    detail: { name: profile.name, code: profile.code }
+  }));
   $("profileModal").classList.add("hidden");
 });
 
@@ -728,7 +742,8 @@ const TITLES = {
   summaryScreen: "게임 결과",
   shopScreen: "상점",
   settingsScreen: "설정",
-  moneyScreen: "돈 관리"
+  moneyScreen: "돈 관리",
+  friendScreen: "친구"
 };
 
 function showScreen(id) {

@@ -7,7 +7,7 @@
   <meta name="description" content="선택과 위험을 감수하는 리스크 게임">
   <title>리스크 게임</title>
   <link rel="manifest" href="./manifest.json">
-  <link rel="stylesheet" href="./style.css?v=10">
+  <link rel="stylesheet" href="./style.css?v=12">
 </head>
 <body>
 <div class="app">
@@ -57,6 +57,9 @@
         <button id="moneyMenuButton" class="menu-button money-menu-button" data-screen="moneyScreen">
           <span class="menu-icon">💰</span><span>돈</span>
           <span id="wageReadyDot" class="ready-dot hidden" aria-label="시급 수령 가능"></span>
+        </button>
+        <button id="friendMenuButton" class="menu-button" data-screen="friendScreen">
+          <span class="menu-icon">👥</span><span>친구</span>
         </button>
       </div>
     </section>
@@ -247,7 +250,7 @@
           <span>고유 코드</span>
           <strong id="profileDisplayCode">#000</strong>
         </div>
-        <p class="muted">이름은 바꿀 수 있지만, 처음 부여된 코드는 바뀌지 않습니다.</p>
+        <p class="muted">온라인 계정 연결 후 부여된 4자리 코드는 이름을 바꿔도 유지됩니다.</p>
         <button id="changeProfileNameButton" class="wide-button secondary">이름 변경</button>
       </div>
       <div class="panel">
@@ -304,6 +307,68 @@
         </div>
       </div>
     </section>
+    <section id="friendScreen" class="screen hidden">
+      <div class="section-heading">
+        <h2>친구</h2>
+        <p>이름과 4자리 고유 코드를 확인해 친구를 추가하세요.</p>
+      </div>
+
+      <div class="panel friend-account-panel">
+        <p class="eyebrow">ONLINE ACCOUNT</p>
+        <h3>온라인 계정</h3>
+        <p id="friendCloudStatus" class="muted">로그인하면 친구 목록을 다른 기기와 동기화할 수 있습니다.</p>
+        <div id="friendAuthPanel">
+          <label for="friendEmail">이메일</label>
+          <input id="friendEmail" type="email" autocomplete="email" placeholder="이메일 주소">
+          <label for="friendPassword">비밀번호</label>
+          <input id="friendPassword" type="password" autocomplete="current-password" minlength="8" placeholder="8자 이상">
+          <div class="two-buttons friend-auth-buttons">
+            <button id="friendSignInButton" class="primary">로그인</button>
+            <button id="friendSignUpButton" class="secondary">계정 만들기</button>
+          </div>
+          <p id="friendAuthMessage" class="friend-message" role="status"></p>
+        </div>
+        <div id="friendSignedInPanel" class="hidden">
+          <div class="profile-detail-row">
+            <span>로그인 계정</span>
+            <strong id="friendAccountEmail"></strong>
+          </div>
+          <div class="profile-detail-row">
+            <span>내 친구 코드</span>
+            <strong id="friendMyCode">불러오는 중...</strong>
+          </div>
+          <button id="friendSignOutButton" class="wide-button secondary">로그아웃</button>
+        </div>
+      </div>
+
+      <div class="panel friend-add-panel">
+        <label for="friendCodeInput">친구 코드 (이름#4자리)</label>
+        <input id="friendCodeInput" type="text" maxlength="25" autocomplete="off" placeholder="예: 플레이어#0123">
+        <button id="addFriendButton" class="wide-button primary">친구 추가</button>
+        <p id="friendMessage" class="friend-message" role="status"></p>
+      </div>
+
+      <div class="friend-list-section friend-requests-section">
+        <div class="friend-list-heading">
+          <h3>받은 친구 요청</h3>
+          <span class="muted">수락해야 친구가 됩니다</span>
+        </div>
+        <div id="friendRequests" class="friend-list">
+          <p class="muted friend-empty">로그인하면 받은 친구 요청을 확인할 수 있습니다.</p>
+        </div>
+      </div>
+
+      <div class="friend-list-section">
+        <div class="friend-list-heading">
+          <h3>친구 목록</h3>
+          <span id="friendAccountSummary" class="muted">로그인 필요</span>
+        </div>
+        <div id="friendList" class="friend-list">
+          <p class="muted friend-empty">로그인하면 친구 목록을 불러올 수 있습니다.</p>
+        </div>
+      </div>
+      <p class="muted friend-data-note">친구 목록은 온라인 계정에 저장됩니다. 게임 예산, 업그레이드, 은행 및 진행 상황은 기존처럼 각 기기에 따로 저장되며 변경되지 않습니다.</p>
+    </section>
   </main>
 
   <footer class="footer">진행 상황은 이 기기에 자동 저장됩니다.</footer>
@@ -347,6 +412,9 @@
 </div>
 
 <div id="purchaseNotice" class="purchase-notice" role="status" aria-live="polite"></div>
-<script src="./script.js?v=14" defer></script>
+<script src="./script.js?v=15" defer></script>
+<script src="./supabase-config.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+<script src="./friends.js?v=2" defer></script>
 </body>
 </html>
