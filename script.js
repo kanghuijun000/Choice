@@ -448,7 +448,8 @@ function defaultState() {
     threeChoiceMode: false,
     wageNextAt: 0,
     activeGame: null,
-    pendingSummary: null
+    pendingSummary: null,
+    gameHistory: []
   };
 }
 
@@ -529,6 +530,8 @@ function normalizeState(raw) {
         startAmount: clampMoney(game.startAmount),
         money: clampMoney(game.money),
         turn: Math.max(1, Math.floor(Number(game.turn) || 1)),
+        turnsPlayed: Math.max(0, Math.floor(Number(game.turnsPlayed) || 0)),
+        rerollsUsed: Math.max(0, Math.floor(Number(game.rerollsUsed) || 0)),
         choices,
         threeChoiceMode: Boolean(game.threeChoiceMode || choices.length === 3),
         reduceLossTurns: Math.max(
@@ -552,8 +555,25 @@ function normalizeState(raw) {
     normalized.pendingSummary = {
       startAmount: clampMoney(raw.pendingSummary.startAmount),
       finalAmount: clampMoney(raw.pendingSummary.finalAmount),
-      reason: String(raw.pendingSummary.reason || "게임 종료")
+      reason: String(raw.pendingSummary.reason || "게임 종료"),
+      turnsPlayed: Math.max(0, Math.floor(Number(raw.pendingSummary.turnsPlayed) || 0)),
+      rerollsUsed: Math.max(0, Math.floor(Number(raw.pendingSummary.rerollsUsed) || 0)),
+      finishedAt: Math.max(0, Number(raw.pendingSummary.finishedAt) || 0)
     };
+  }
+
+  if (Array.isArray(raw.gameHistory)) {
+    normalized.gameHistory = raw.gameHistory
+      .filter(item => item && typeof item === "object")
+      .map(item => ({
+        startAmount: clampMoney(item.startAmount),
+        finalAmount: clampMoney(item.finalAmount),
+        turnsPlayed: Math.max(0, Math.floor(Number(item.turnsPlayed) || 0)),
+        rerollsUsed: Math.max(0, Math.floor(Number(item.rerollsUsed) || 0)),
+        finishedAt: Math.max(0, Number(item.finishedAt) || 0)
+      }))
+      .filter(item => item.startAmount > 0 && item.finishedAt > 0)
+      .slice(0, 20);
   }
 
   return normalized;
@@ -804,6 +824,7 @@ const TITLES = {
   amountScreen: "게임 금액 설정",
   gameScreen: "게임",
   summaryScreen: "게임 결과",
+  historyScreen: "결과 내역",
   shopScreen: "상점",
   settingsScreen: "설정",
   moneyScreen: "돈 관리",
@@ -844,6 +865,7 @@ function showScreen(id) {
   if (id === "gameScreen") renderGame();
   if (id === "summaryScreen") renderSummary();
   if (id === "shopScreen") updateShop();
+  if (id === "historyScreen") renderGameHistory();
 
   if (id === "moneyScreen") {
     setBankTab(currentBankTab);
@@ -898,6 +920,67 @@ function updateHome() {
   $("budgetDisplay").textContent = moneyText(state.budget);
   $("rerollDisplay").textContent =
     `${state.rerolls} / ${state.rerollCap}개`;
+}
+
+function relativeHistoryTime(timestamp) {
+  const elapsed = Math.max(0, Date.now() - Number(timestamp || 0));
+  const minutes = Math.floor(elapsed / 60000);
+  if (minutes < 1) return "최근";
+  if (minutes < 60) return `${minutes}분 전`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}시간 전`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return "하루 전";
+  return `${days}일 전`;
+}
+
+function renderGameHistory() {
+  const container = $("gameHistoryList");
+  if (!container) return;
+  const records = Array.isArray(state.gameHistory) ? state.gameHistory.slice(0, 20) : [];
+  container.replaceChildren();
+
+  if (!records.length) {
+    const empty = document.createElement("p");
+    empty.className = "muted history-empty";
+    empty.textContent = "아직 정산된 게임 기록이 없습니다.";
+    container.appendChild(empty);
+    return;
+  }
+
+  records.forEach((record, index) => {
+    const profit = record.finalAmount - record.startAmount;
+    const item = document.createElement("article");
+    item.className = "history-item";
+    const top = document.createElement("div");
+    top.className = "history-item-top";
+    const title = document.createElement("strong");
+    title.textContent = `게임 ${records.length - index}`;
+    const time = document.createElement("span");
+    time.className = "history-time";
+    time.textContent = relativeHistoryTime(record.finishedAt);
+    top.append(title, time);
+    const stake = document.createElement("div");
+    stake.className = "history-detail-row";
+    const stakeLabel = document.createElement("span");
+    stakeLabel.textContent = "판돈";
+    const stakeValue = document.createElement("strong");
+    stakeValue.textContent = moneyText(record.startAmount);
+    stake.append(stakeLabel, stakeValue);
+    const result = document.createElement("div");
+    result.className = "history-detail-row";
+    const resultLabel = document.createElement("span");
+    resultLabel.textContent = "손익";
+    const resultValue = document.createElement("strong");
+    resultValue.className = profit < 0 ? "history-loss" : "history-profit";
+    resultValue.textContent = (profit > 0 ? "+" : profit < 0 ? "-" : "") + moneyText(Math.abs(profit));
+    result.append(resultLabel, resultValue);
+    const stats = document.createElement("p");
+    stats.className = "history-stats";
+    stats.textContent = `턴 ${record.turnsPlayed}회 · 리롤 ${record.rerollsUsed}회`;
+    item.append(top, stake, result, stats);
+    container.appendChild(item);
+  });
 }
 
 $("startGameButton").addEventListener("click", () => {
@@ -988,6 +1071,8 @@ $("confirmStartButton").addEventListener("click", () => {
     startAmount: amount,
     money: amount,
     turn: 1,
+    turnsPlayed: 0,
+    rerollsUsed: 0,
     threeChoiceMode: Boolean(
       state.threeChoiceMode && state.threeChoiceUnlocked
     ),
@@ -1182,6 +1267,7 @@ function chooseOption(index) {
   if (!choice) return;
 
   game.forcedColor = null;
+  game.turnsPlayed = Math.max(0, Math.floor(Number(game.turnsPlayed) || 0)) + 1;
 
   const before = game.money;
 
@@ -1263,6 +1349,7 @@ $("rerollButton").addEventListener("click", () => {
   if (!game || state.rerolls <= 0) return;
 
   state.rerolls -= 1;
+  game.rerollsUsed = Math.max(0, Math.floor(Number(game.rerollsUsed) || 0)) + 1;
 
   game.choices = generateChoices(
     game.choices,
@@ -1295,7 +1382,10 @@ function finishGame(reason) {
   state.pendingSummary = {
     startAmount: clampMoney(game.startAmount),
     finalAmount: clampMoney(game.money),
-    reason: String(reason || "게임 종료")
+    reason: String(reason || "게임 종료"),
+    turnsPlayed: Math.max(0, Math.floor(Number(game.turnsPlayed) || 0)),
+    rerollsUsed: Math.max(0, Math.floor(Number(game.rerollsUsed) || 0)),
+    finishedAt: Date.now()
   };
 
   state.activeGame = null;
@@ -1333,6 +1423,13 @@ $("settleButton").addEventListener("click", () => {
   if (!result) return;
 
   state.budget = addMoney(state.budget, result.finalAmount);
+  state.gameHistory = [{
+    startAmount: clampMoney(result.startAmount),
+    finalAmount: clampMoney(result.finalAmount),
+    turnsPlayed: Math.max(0, Math.floor(Number(result.turnsPlayed) || 0)),
+    rerollsUsed: Math.max(0, Math.floor(Number(result.rerollsUsed) || 0)),
+    finishedAt: Math.max(0, Number(result.finishedAt) || Date.now())
+  }, ...(Array.isArray(state.gameHistory) ? state.gameHistory : [])].slice(0, 20);
   state.pendingSummary = null;
 
   saveState();
@@ -1926,6 +2023,7 @@ function updateAll() {
   if (currentScreen === "amountScreen") updateAmountScreen();
   if (currentScreen === "gameScreen") renderGame();
   if (currentScreen === "summaryScreen") renderSummary();
+  if (currentScreen === "historyScreen") renderGameHistory();
 }
 
 /* =========================
