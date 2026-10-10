@@ -22,6 +22,8 @@
   let syncedUserId = null;
   let renderedRequestsSignature = null;
   let renderedFriendsSignature = null;
+  let presenceSyncInProgress = false;
+  let lastPresenceSyncAt = 0;
 
   function withTimeout(promise, label, milliseconds = 12000) {
     let timer;
@@ -117,6 +119,18 @@
     return data;
   }
 
+  function isFriendOnline(friend) {
+    if (!friend.last_seen_at) return false;
+    const lastSeen = Date.parse(friend.last_seen_at);
+    return Number.isFinite(lastSeen) && Date.now() - lastSeen <= 30000;
+  }
+
+  function formatFriendMoney(value) {
+    const amount = Number(value);
+    return (Number.isFinite(amount) && amount >= 0 ? Math.floor(amount) : 0)
+      .toLocaleString("ko-KR") + "원";
+  }
+
   function makeFriendRow(friend) {
     const row = document.createElement("div");
     row.className = "friend-row";
@@ -124,13 +138,27 @@
     const details = document.createElement("div");
     details.className = "friend-row-details";
 
+    const nameLine = document.createElement("div");
+    nameLine.className = "friend-name-line";
+
+    const online = isFriendOnline(friend);
+    const dot = document.createElement("span");
+    dot.className = "friend-presence-dot" + (online ? " is-online" : "");
+    dot.setAttribute("aria-label", online ? "앱 사용 중" : "앱 사용 중 아님");
+    dot.title = online ? "앱 사용 중" : "앱 사용 중 아님";
+
     const name = document.createElement("strong");
     name.textContent = friend.display_name;
+    nameLine.append(dot, name);
 
     const code = document.createElement("span");
     code.textContent = "#" + friend.friend_code;
 
-    details.append(name, code);
+    const budget = document.createElement("span");
+    budget.className = "friend-budget";
+    budget.textContent = "예산 " + formatFriendMoney(friend.current_budget);
+
+    details.append(nameLine, code, budget);
 
     const remove = document.createElement("button");
     remove.type = "button";
@@ -219,6 +247,30 @@
     renderedRequestsSignature = signature;
   }
 
+  async function syncMyPresence(force = false) {
+    if (!client || !currentUser || document.visibilityState !== "visible") return;
+    const now = Date.now();
+    if (presenceSyncInProgress || (!force && now - lastPresenceSyncAt < 9000)) return;
+    presenceSyncInProgress = true;
+    lastPresenceSyncAt = now;
+    try {
+      const budget = typeof window.riskGameGetBudget === "function"
+        ? window.riskGameGetBudget()
+        : 0;
+      const safeBudget = Number.isFinite(Number(budget))
+        ? Math.max(0, Math.floor(Number(budget)))
+        : 0;
+      const { error } = await client.rpc("sync_risk_game_presence", {
+        p_budget: safeBudget
+      });
+      if (error) throw error;
+    } catch (error) {
+      console.error("온라인 상태/예산 동기화 실패:", error);
+    } finally {
+      presenceSyncInProgress = false;
+    }
+  }
+
   async function loadFriends() {
     const list = $("friendList");
     if (!list) return;
@@ -248,7 +300,7 @@
     if (ids.length) {
       const { data, error: profilesError } = await client
         .from("profiles")
-        .select("id, display_name, friend_code")
+        .select("id, display_name, friend_code, current_budget, last_seen_at")
         .in("id", ids);
 
       if (profilesError) throw profilesError;
@@ -257,7 +309,11 @@
     }
 
     const signature = currentUser.id + ":" + JSON.stringify(profiles.map(friend => [
-      friend.id, friend.display_name, friend.friend_code
+      friend.id,
+      friend.display_name,
+      friend.friend_code,
+      Number(friend.current_budget) || 0,
+      isFriendOnline(friend)
     ]));
     if (signature === renderedFriendsSignature) return;
 
@@ -282,6 +338,7 @@
     }
     try {
       await fetchMyProfile();
+      await syncMyPresence(true);
       await loadFriends();
       await loadRequests();
       updateAccountUi();
@@ -503,12 +560,22 @@
     window.addEventListener("risk-game-profile-updated", event => {
       updateCloudName(event.detail);
     });
+    window.addEventListener("risk-game-budget-updated", () => {
+      syncMyPresence(true);
+    });
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
+        syncMyPresence(true);
+        loadFriends().catch(error => console.error("친구 목록 새로고침 실패:", error));
+      }
+    });
 
     updateAccountUi();
     loadRequests().catch(error => console.error("친구 요청 불러오기 실패:", error));
     window.setInterval(() => {
       if (currentUser) {
-        // 상대 계정의 수락/삭제 결과가 화면에 자동 반영되도록 친구 목록도 주기적으로 동기화합니다.
+        // 화면이 보이는 동안 온라인 상태와 예산, 친구 목록을 동기화합니다.
+        syncMyPresence().catch(() => {});
         loadFriends().catch(error => console.error("친구 목록 자동 새로고침 실패:", error));
         loadRequests().catch(error => console.error("친구 요청 새로고침 실패:", error));
       }
