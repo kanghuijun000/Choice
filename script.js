@@ -692,10 +692,12 @@ let currentScreen = "homeScreen";
 let currentBankTab = "bank";
 let moneyModalMode = null;
 let saveTimer = null;
+let appPermanentlyStopped = false;
 let lastActiveTick =
   document.visibilityState === "visible" ? Date.now() : null;
 
 function saveState() {
+  if (appPermanentlyStopped) return false;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     localStorage.setItem("risk-game-local-updated-at", String(Date.now()));
@@ -713,6 +715,7 @@ function saveState() {
 }
 
 function scheduleSave() {
+  if (appPermanentlyStopped) return;
   if (saveTimer !== null) clearTimeout(saveTimer);
 
   saveTimer = setTimeout(() => {
@@ -720,6 +723,18 @@ function scheduleSave() {
     saveState();
   }, 100);
 }
+
+window.riskGameFinishAccountDeletion = () => {
+  appPermanentlyStopped = true;
+  if (saveTimer !== null) {
+    clearTimeout(saveTimer);
+    saveTimer = null;
+  }
+  const app = document.querySelector(".app");
+  if (app) app.classList.add("hidden");
+  const deletedScreen = $("accountDeletedScreen");
+  if (deletedScreen) deletedScreen.classList.remove("hidden");
+};
 
 const SETTINGS_DEFAULT_CATEGORY = "accountSecurity";
 
@@ -2079,6 +2094,24 @@ $("claimWageButton").addEventListener("click", () => {
    전체 초기화
 ========================= */
 
+$("deleteAccountButton").addEventListener("click", () => {
+  askConfirm(
+    "정말로 이 계정을 영구 삭제할까요? 계정, 설정한 복구 비밀번호, 고유 코드, 클라우드 게임 데이터와 친구 관계가 모두 삭제됩니다. 삭제 후에는 복구할 수 없습니다.",
+    () => {
+      if (typeof window.riskGameDeleteAccount === "function") {
+        window.riskGameDeleteAccount();
+      } else {
+        const status = $("deleteAccountMessage");
+        if (status) {
+          status.textContent = "계정 삭제 기능을 준비하지 못했습니다. 페이지를 새로고침한 뒤 다시 시도하세요.";
+          status.classList.add("recovery-error");
+        }
+      }
+    },
+    "계정 영구 삭제 확인"
+  );
+});
+
 $("resetGameButton").addEventListener("click", () => {
   askConfirm(
     "모든 진행 데이터를 초기화할까요? 예산, 게임 한도, 리롤, 은행 원금과 이자, 이자율, 시급 대기 시간, 해금 항목과 진행 중인 게임이 모두 초기 상태로 돌아갑니다. 이 작업은 되돌릴 수 없습니다.",
@@ -2180,7 +2213,7 @@ function initializeApp() {
 }
 
 setInterval(() => {
-  if (document.visibilityState !== "visible") return;
+  if (appPermanentlyStopped || document.visibilityState !== "visible") return;
 
   syncBankClock(Date.now());
   updateBank();
