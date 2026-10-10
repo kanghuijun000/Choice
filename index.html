@@ -7,7 +7,7 @@
   <meta name="description" content="선택과 위험을 감수하는 리스크 게임">
   <title>리스크 게임</title>
   <link rel="manifest" href="./manifest.json">
-  <link rel="stylesheet" href="./style.css?v=11">
+  <link rel="stylesheet" href="./style.css?v=12">
 </head>
 <body>
 <div class="app">
@@ -348,6 +348,16 @@
         <p id="friendMessage" class="friend-message" role="status"></p>
       </div>
 
+      <div class="friend-list-section friend-requests-section">
+        <div class="friend-list-heading">
+          <h3>받은 친구 요청</h3>
+          <span class="muted">수락해야 친구가 됩니다</span>
+        </div>
+        <div id="friendRequests" class="friend-list">
+          <p class="muted friend-empty">로그인하면 받은 친구 요청을 확인할 수 있습니다.</p>
+        </div>
+      </div>
+
       <div class="friend-list-section">
         <div class="friend-list-heading">
           <h3>친구 목록</h3>
@@ -405,6 +415,6 @@
 <script src="./script.js?v=15" defer></script>
 <script src="./supabase-config.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-<script src="./friends.js" defer></script>
+<script src="./friends.js?v=2" defer></script>
 </body>
 </html>
