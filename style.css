@@ -1328,3 +1328,36 @@ input::-webkit-inner-spin-button, input::-webkit-outer-spin-button {
 :root[data-app-theme="cocoa"] { --bg: #2d2117; --bg-glow: #403023; }
 :root[data-app-theme="plum"] { --bg: #302132; --bg-glow: #433047; }
 :root[data-app-theme="stone"] { --bg: #35312a; --bg-glow: #484239; }
+
+
+/* Permanent account-deletion end screen */
+.account-delete-panel {
+  border-color: rgba(240, 79, 104, 0.42);
+}
+.account-delete-panel .eyebrow {
+  color: #ff8295;
+}
+.account-deleted-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+  background: #000;
+  color: #fff;
+  text-align: center;
+}
+.account-deleted-screen > div {
+  width: min(100%, 360px);
+}
+.account-deleted-title {
+  margin: 0 0 12px;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+.account-deleted-screen p:last-child {
+  margin: 0;
+  color: #c8c8c8;
+}
