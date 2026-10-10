@@ -97,6 +97,59 @@ Deno.serve(async (req) => {
     return reply({ email: data.synthetic_email });
   }
 
+  // Allow a stale device to delete only after proving the recovery password.
+  // If the user was already deleted on another device, report that state so the
+  // stale device can clear its local cache without pretending a server deletion occurred.
+  if (action === "delete_account_with_recovery_password") {
+    const staleUserId = body.staleUserId;
+    const password = body.password;
+    if (typeof staleUserId !== "string" ||
+        !/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/.test(staleUserId)) {
+      return reply({ error: "이 기기의 기존 계정 정보를 확인할 수 없습니다. 기존 계정 복구를 이용해 주세요." }, 400);
+    }
+    if (!validPassword(password)) {
+      return reply({ error: "복구 비밀번호를 10~128자로 입력해 주세요." }, 400);
+    }
+
+    const forwardedFor = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
+    const clientIp = forwardedFor.split(",")[0].trim().slice(0, 128);
+    const ipHash = await digestPassword(clientIp, hmacSecret);
+    const { data: allowed, error: limitError } = await service.rpc("consume_risk_game_recovery_attempt", {
+      p_ip_hash: ipHash, p_limit: 8,
+    });
+    if (limitError) return reply({ error: "삭제 확인을 위한 보안 제한 기능이 준비되지 않았습니다. 잠시 후 다시 시도하세요." }, 503);
+    if (allowed !== true) return reply({ error: "시도 횟수가 너무 많습니다. 1분 뒤 다시 시도하세요." }, 429);
+
+    const digest = await digestPassword(password, hmacSecret);
+    const { data: credential, error: credentialError } = await service
+      .from("risk_game_recovery_credentials")
+      .select("user_id, password_digest")
+      .eq("user_id", staleUserId)
+      .maybeSingle();
+    if (credentialError) return reply({ error: "복구 계정 상태를 확인하지 못했습니다." }, 500);
+
+    if (credential) {
+      if (credential.password_digest !== digest) {
+        return reply({ error: "복구 비밀번호가 일치하지 않습니다. 계정은 삭제되지 않았습니다." }, 401);
+      }
+      const { error: deleteError } = await service.auth.admin.deleteUser(staleUserId);
+      if (deleteError) {
+        const { data: existingUser } = await service.auth.admin.getUserById(staleUserId);
+        if (existingUser?.user) {
+          console.error("Recovery-password account deletion failed:", deleteError);
+          return reply({ error: "서버에서 계정 삭제를 완료하지 못했습니다. 잠시 후 다시 시도하세요." }, 500);
+        }
+      }
+      return reply({ ok: true, deleted: true });
+    }
+
+    const { data: existingUser } = await service.auth.admin.getUserById(staleUserId);
+    if (!existingUser?.user) {
+      return reply({ ok: true, deleted: true, alreadyDeleted: true });
+    }
+    return reply({ error: "이 계정에는 복구 비밀번호가 설정되어 있지 않아 안전하게 삭제할 수 없습니다. 계정 복구를 먼저 진행해 주세요." }, 409);
+  }
+
   const authorization = req.headers.get("Authorization") || "";
   const token = authorization.replace(/^Bearer\s+/i, "");
   if (!token) return reply({ error: "로그인된 계정이 필요합니다." }, 401);
