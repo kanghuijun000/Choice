@@ -254,31 +254,8 @@ revoke all on function public.accept_risk_game_friend_request(uuid) from public,
 revoke all on function public.decline_risk_game_friend_request(uuid) from public, anon;
 grant execute on function public.accept_risk_game_friend_request(uuid) to authenticated;
 grant execute on function public.decline_risk_game_friend_request(uuid) to authenticated;
- then
-    begin
-      update public.profiles p
-        set display_name = chosen_name, friend_code = p_code
-        where p.id = current_id;
-    exception when unique_violation then
-      update public.profiles p
-        set display_name = chosen_name
-        where p.id = current_id;
-    end;
-  else
-    update public.profiles p
-      set display_name = chosen_name
-      where p.id = current_id;
-  end if;
 
-  return query
-    select p.id, p.display_name, p.friend_code
-    from public.profiles p
-    where p.id = current_id;
-end;
-$;
 
-revoke all on function public.sync_risk_game_profile(text, text) from public, anon;
-grant execute on function public.sync_risk_game_profile(text, text) to authenticated;
 
 -- 새로 만든 함수와 테이블은 인증 사용자에게만 필요한 권한을 줍니다.
 
