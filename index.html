@@ -362,7 +362,10 @@
       <div class="friend-list-section">
         <div class="friend-list-heading">
           <h3>친구 목록</h3>
-          <span id="friendAccountSummary" class="muted">연결 중</span>
+          <div class="friend-heading-actions">
+            <span id="friendAccountSummary" class="muted">연결 중</span>
+            <button id="refreshFriendsButton" class="friend-refresh-button" type="button">새로고침</button>
+          </div>
         </div>
         <div id="friendList" class="friend-list">
           <p class="muted friend-empty">온라인 연결 후 친구 목록을 불러올 수 있습니다.</p>
@@ -416,6 +419,6 @@
 <script src="./script.js?v=18" defer></script>
 <script src="./supabase-config.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-<script src="./friends.js?v=11" defer></script>
+<script src="./friends.js?v=12" defer></script>
 </body>
 </html>
