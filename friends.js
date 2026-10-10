@@ -561,7 +561,7 @@
       updateCloudName(event.detail);
     });
     window.addEventListener("risk-game-budget-updated", () => {
-      syncMyPresence(true);
+      syncMyPresence();
     });
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible") {
