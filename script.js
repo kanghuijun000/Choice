@@ -632,6 +632,7 @@ function createProfile(name) {
 
 let profile = loadProfile();
 let state = loadState();
+window.riskGameGetBudget = () => state.budget;
 let currentScreen = "homeScreen";
 let currentBankTab = "bank";
 let moneyModalMode = null;
@@ -642,6 +643,7 @@ let lastActiveTick =
 function saveState() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    window.dispatchEvent(new Event("risk-game-budget-updated"));
     $("saveStatus").textContent = "저장됨";
     $("saveStatus").style.color = "var(--green)";
     return true;
