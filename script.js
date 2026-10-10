@@ -11,147 +11,224 @@ const LEGACY_KEYS = [
   "gameState"
 ];
 
-const MAX_MONEY = 9000000000000;
+const MAX_MONEY = Number.MAX_VALUE;
 const BANK_MINUTE_MS = 60000;
+const INITIAL_BANK_RATE = 1;
 const WAGE_AMOUNT = 5000;
 const WAGE_COOLDOWN_MS = 3600000;
 
 const $ = id => document.getElementById(id);
-const moneyFormat = new Intl.NumberFormat("ko-KR", { maximumFractionDigits: 0 });
+const moneyFormat = new Intl.NumberFormat("ko-KR", {
+  maximumFractionDigits: 0
+});
 
 function clampMoney(value) {
   const n = Number(value);
   if (!Number.isFinite(n) || n <= 0) return 0;
-  return Math.min(MAX_MONEY, Math.floor(n));
+  return Math.floor(n);
 }
 
 function addMoney(a, b) {
-  return clampMoney(clampMoney(a) + clampMoney(b));
+  const sum = clampMoney(a) + clampMoney(b);
+  return Number.isFinite(sum) ? Math.floor(sum) : Number.MAX_VALUE;
 }
 
 function moneyText(value) {
-  return moneyFormat.format(clampMoney(value)) + "원";
+  const n = clampMoney(value);
+
+  if (n < 1000000000000) {
+    return moneyFormat.format(n) + "원";
+  }
+
+  const units = [
+    [1000000000000, "조"],
+    [100000000, "억"],
+    [10000, "만"]
+  ];
+
+  let remaining = n;
+  const parts = [];
+
+  for (const [unitValue, unitName] of units) {
+    const amount = Math.floor(remaining / unitValue);
+
+    if (amount > 0) {
+      parts.push(moneyFormat.format(amount) + unitName);
+      remaining -= amount * unitValue;
+    }
+  }
+
+  if (remaining > 0) {
+    parts.push(moneyFormat.format(remaining) + "원");
+  }
+
+  return parts.join(" ") || "0원";
 }
 
 function clockText(seconds) {
   const n = Math.max(0, Math.ceil(seconds));
+
   return String(Math.floor(n / 60)).padStart(2, "0") + ":" +
     String(n % 60).padStart(2, "0");
 }
 
 /* =========================
    선택지
-   수익이 지나치게 빠르게 누적되지 않도록
-   효과와 패널티 확률을 조정함.
 ========================= */
 
 const SAFE_CHOICES = [
   {
-    id: "safe3",
-    effect: 3,
-    title: "+3%",
+    id: "safe10",
+    effect: 10,
+    title: "+10%",
+    penalty: "패널티: 5% 확률로 10% 손실",
+    penaltyChance: 5,
+    penaltyType: "loss10"
+  },
+  {
+    id: "safe15",
+    effect: 15,
+    title: "+15%",
+    penalty: "패널티: 8% 확률로 다음 턴 빨강 강제",
+    penaltyChance: 8,
+    penaltyType: "forceRed"
+  },
+  {
+    id: "safe20",
+    effect: 20,
+    title: "+20%",
     penalty: "패널티: 10% 확률로 10% 손실",
     penaltyChance: 10,
     penaltyType: "loss10"
   },
   {
-    id: "safe5",
-    effect: 5,
-    title: "+5%",
-    penalty: "패널티: 12% 확률로 10% 손실",
+    id: "safe25",
+    effect: 25,
+    title: "+25%",
+    penalty: "패널티: 14% 확률로 25% 손실",
+    penaltyChance: 14,
+    penaltyType: "loss25"
+  },
+  {
+    id: "safeMinus10",
+    effect: -10,
+    title: "−10%",
+    penalty: "패널티: 8% 확률로 다음 턴 파랑 강제",
+    penaltyChance: 8,
+    penaltyType: "forceBlue"
+  },
+  {
+    id: "safeNoPenalty",
+    effect: 20,
+    title: "+20%",
+    penalty: "패널티: 없음",
+    penaltyChance: 0,
+    penaltyType: "none"
+  },
+  {
+    id: "safeForceGreen",
+    effect: 30,
+    title: "+30%",
+    penalty: "패널티: 12% 확률로 다음 턴 초록 강제",
     penaltyChance: 12,
-    penaltyType: "loss10"
+    penaltyType: "forceGreen"
   },
   {
-    id: "safe7",
-    effect: 7,
-    title: "+7%",
-    penalty: "패널티: 15% 확률로 15% 손실",
-    penaltyChance: 15,
-    penaltyType: "loss15"
+    id: "safeBonus5",
+    effect: 15,
+    title: "+15%",
+    penalty: "보너스: 다음 5턴 손실 패널티 확률 감소",
+    penaltyChance: 0,
+    penaltyType: "none",
+    bonusType: "reduceLoss",
+    bonusTurns: 5
   },
   {
-    id: "safe10",
+    id: "safeBonus10",
     effect: 10,
     title: "+10%",
-    penalty: "패널티: 20% 확률로 20% 손실",
-    penaltyChance: 20,
-    penaltyType: "loss20"
-  },
-  {
-    id: "safeMinus5",
-    effect: -5,
-    title: "−5%",
-    penalty: "패널티: 10% 확률로 다음 턴 색상 제한",
-    penaltyChance: 10,
-    penaltyType: "force"
+    penalty: "보너스: 다음 10턴 안전한 양수 선택지 확률 증가",
+    penaltyChance: 0,
+    penaltyType: "none",
+    bonusType: "safePositive",
+    bonusTurns: 10
   }
 ];
 
 const RISKY_CHOICES = [
   {
-    id: "risk8",
-    effect: 8,
-    title: "+8%",
-    penalty: "패널티: 25% 확률로 25% 손실",
-    penaltyChance: 25,
+    id: "risk40",
+    effect: 40,
+    title: "+40%",
+    penalty: "패널티: 20% 확률로 25% 손실",
+    penaltyChance: 20,
     penaltyType: "loss25"
-  },
-  {
-    id: "risk12",
-    effect: 12,
-    title: "+12%",
-    penalty: "패널티: 30% 확률로 25% 손실",
-    penaltyChance: 30,
-    penaltyType: "loss25"
-  },
-  {
-    id: "risk18",
-    effect: 18,
-    title: "+18%",
-    penalty: "패널티: 40% 확률로 35% 손실",
-    penaltyChance: 40,
-    penaltyType: "loss35"
-  },
-  {
-    id: "risk25",
-    effect: 25,
-    title: "+25%",
-    penalty: "패널티: 50% 확률로 40% 손실",
-    penaltyChance: 50,
-    penaltyType: "loss40"
-  },
-  {
-    id: "risk35",
-    effect: 35,
-    title: "+35%",
-    penalty: "패널티: 60% 확률로 50% 손실",
-    penaltyChance: 60,
-    penaltyType: "loss50"
   },
   {
     id: "risk50",
     effect: 50,
     title: "+50%",
-    penalty: "패널티: 70% 확률로 60% 손실",
-    penaltyChance: 70,
-    penaltyType: "loss60"
+    penalty: "패널티: 25% 확률로 25% 손실",
+    penaltyChance: 25,
+    penaltyType: "loss25"
   },
   {
-    id: "riskMinus10",
-    effect: -10,
-    title: "−10%",
-    penalty: "패널티: 30% 확률로 25% 추가 손실",
+    id: "risk75",
+    effect: 75,
+    title: "+75%",
+    penalty: "패널티: 30% 확률로 25% 손실",
     penaltyChance: 30,
     penaltyType: "loss25"
   },
   {
-    id: "riskMinus20",
-    effect: -20,
-    title: "−20%",
-    penalty: "패널티: 40% 확률로 35% 추가 손실",
-    penaltyChance: 40,
-    penaltyType: "loss35"
+    id: "risk100",
+    effect: 100,
+    title: "+100%",
+    penalty: "패널티: 38% 확률로 50% 손실",
+    penaltyChance: 38,
+    penaltyType: "loss50"
+  },
+  {
+    id: "risk200",
+    effect: 200,
+    title: "+200%",
+    penalty: "패널티: 52% 확률로 50% 손실",
+    penaltyChance: 52,
+    penaltyType: "loss50"
+  },
+  {
+    id: "risk1000",
+    effect: 1000,
+    title: "+1000%",
+    penalty: "패널티: 80% 확률로 전액 손실",
+    penaltyChance: 80,
+    penaltyType: "totalLoss"
+  },
+  {
+    id: "riskMinus25",
+    effect: -25,
+    title: "−25%",
+    penalty: "패널티: 25% 확률로 25% 추가 손실",
+    penaltyChance: 25,
+    penaltyType: "loss25"
+  },
+  {
+    id: "riskMinus50",
+    effect: -50,
+    title: "−50%",
+    penalty: "패널티: 35% 확률로 50% 추가 손실",
+    penaltyChance: 35,
+    penaltyType: "loss50"
+  },
+  {
+    id: "riskMinus15Bonus",
+    effect: -15,
+    title: "−15%",
+    penalty: "보너스: 다음 5턴 손실 패널티 확률 감소",
+    penaltyChance: 0,
+    penaltyType: "none",
+    bonusType: "reduceLoss",
+    bonusTurns: 5
   }
 ];
 
@@ -164,67 +241,64 @@ function shuffledPair(a, b) {
 }
 
 function samePair(a, b) {
-  if (!Array.isArray(a) || !Array.isArray(b) ||
-      a.length !== 2 || b.length !== 2) return false;
-
-  return (
-    (a[0].id === b[0].id && a[1].id === b[1].id) ||
-    (a[0].id === b[1].id && a[1].id === b[0].id)
-  );
-}
-
-function generateChoices(previous = null) {
-  const possible = [];
-
-  for (const safe of SAFE_CHOICES) {
-    for (const risky of RISKY_CHOICES) {
-      const pair = shuffledPair({ ...safe }, { ...risky });
-      if (!samePair(pair, previous)) possible.push(pair);
-    }
+  if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) {
+    return false;
   }
 
-  if (possible.length) return randomItem(possible);
+  const aIds = a.map(x => x && x.id).sort().join("|");
+  const bIds = b.map(x => x && x.id).sort().join("|");
 
-  return shuffledPair({ ...SAFE_CHOICES[0] }, { ...RISKY_CHOICES[0] });
+  return aIds === bIds;
+}
+
+function generateChoices(previous = null, count = 2, safeBoost = false) {
+  for (let attempt = 0; attempt < 120; attempt++) {
+    const safePool = SAFE_CHOICES
+      .filter(choice => count === 3 || choice.penaltyType !== "forceGreen")
+      .map(choice => ({ ...choice }));
+
+    if (safeBoost) {
+      const extra = SAFE_CHOICES.find(choice => choice.id === "safeNoPenalty");
+      if (extra) safePool.push({ ...extra }, { ...extra });
+    }
+
+    const safe = randomItem(safePool);
+    const risky = randomItem(RISKY_CHOICES);
+    let result = shuffledPair(safe, { ...risky });
+
+    if (count === 3) {
+      const used = new Set(result.map(choice => choice.id));
+      const remaining = [...SAFE_CHOICES, ...RISKY_CHOICES]
+        .filter(choice => !used.has(choice.id));
+
+      result.push({ ...randomItem(remaining) });
+
+      if (Math.random() < 0.5) {
+        result = [result[0], result[2], result[1]];
+      }
+    }
+
+    if (!samePair(result, previous)) return result;
+  }
+
+  const fallback = shuffledPair(
+    { ...SAFE_CHOICES[0] },
+    { ...RISKY_CHOICES[0] }
+  );
+
+  if (count === 3) fallback.push({ ...SAFE_CHOICES[1] });
+
+  return fallback;
 }
 
 function findChoice(id) {
-  return [...SAFE_CHOICES, ...RISKY_CHOICES].find(c => c.id === id);
+  return [...SAFE_CHOICES, ...RISKY_CHOICES].find(choice => choice.id === id);
 }
 
 function normalizeChoice(raw) {
   if (!raw || typeof raw !== "object") return null;
 
   const known = findChoice(raw.id);
-  if (known && (raw.title === undefined || raw.penalty === undefined)) {
-    return { ...known };
-  }
-
-  // 업데이트 전에 진행 중이던 게임의 선택지는 저장 당시 효과를 유지한다.
-  const allowedPenaltyTypes = [
-    "loss10", "loss15", "loss20", "loss25",
-    "loss35", "loss40", "loss50", "loss60",
-    "force", "totalLoss"
-  ];
-
-  if (
-    typeof raw.id === "string" &&
-    Number.isFinite(Number(raw.effect)) &&
-    typeof raw.title === "string" &&
-    typeof raw.penalty === "string" &&
-    Number.isFinite(Number(raw.penaltyChance)) &&
-    allowedPenaltyTypes.includes(raw.penaltyType)
-  ) {
-    return {
-      id: raw.id,
-      effect: Math.max(-100, Math.min(1000, Number(raw.effect))),
-      title: raw.title,
-      penalty: raw.penalty,
-      penaltyChance: Math.max(0, Math.min(100, Number(raw.penaltyChance))),
-      penaltyType: raw.penaltyType
-    };
-  }
-
   return known ? { ...known } : null;
 }
 
@@ -240,8 +314,10 @@ function defaultState() {
     rerollCap: 5,
     bankPrincipal: 0,
     bankInterest: 0,
-    bankRatePercent: 1,
     bankElapsedMs: 0,
+    bankRate: INITIAL_BANK_RATE,
+    threeChoiceUnlocked: false,
+    threeChoiceMode: false,
     wageNextAt: 0,
     activeGame: null,
     pendingSummary: null
@@ -252,6 +328,7 @@ function readObject(key) {
   try {
     const raw = localStorage.getItem(key);
     if (!raw) return null;
+
     const parsed = JSON.parse(raw);
     return parsed && typeof parsed === "object" ? parsed : null;
   } catch {
@@ -261,9 +338,10 @@ function readObject(key) {
 
 function normalizeState(raw) {
   const base = defaultState();
+
   if (!raw || typeof raw !== "object") return base;
 
-  const state = {
+  const normalized = {
     ...base,
     budget: clampMoney(raw.budget ?? raw.money ?? raw.balance ?? base.budget),
     gameLimit: clampMoney(raw.gameLimit ?? raw.maxGameMoney ?? base.gameLimit),
@@ -271,10 +349,12 @@ function normalizeState(raw) {
     rerollCap: 5,
     bankPrincipal: clampMoney(raw.bankPrincipal ?? raw.bankMoney ?? 0),
     bankInterest: clampMoney(raw.bankInterest ?? raw.interest ?? 0),
-    bankRatePercent: Math.max(
+    bankRate: Math.max(
       1,
-      Math.min(10, Math.floor(Number(raw.bankRatePercent) || 1))
+      Math.min(10, Math.floor(Number(raw.bankRate) || INITIAL_BANK_RATE))
     ),
+    threeChoiceUnlocked: Boolean(raw.threeChoiceUnlocked),
+    threeChoiceMode: Boolean(raw.threeChoiceMode && raw.threeChoiceUnlocked),
     bankElapsedMs: Math.max(
       0,
       Math.floor(Number(raw.bankElapsedMs) || 0) % BANK_MINUTE_MS
@@ -284,47 +364,72 @@ function normalizeState(raw) {
     pendingSummary: null
   };
 
-  state.gameLimit = Math.max(1000, state.gameLimit || 5000);
-  state.rerollCap = Math.max(5, Math.min(50,
-    Math.floor((Number(raw.rerollCap) || 5) / 5) * 5));
-  state.rerolls = Math.max(0, Math.min(
-    state.rerollCap,
-    Math.floor(Number(raw.rerolls ?? state.rerollCap) || 0)
-  ));
+  normalized.gameLimit = Math.max(1000, normalized.gameLimit || 5000);
+  normalized.rerollCap = Math.max(
+    5,
+    Math.min(50, Math.floor((Number(raw.rerollCap) || 5) / 5) * 5)
+  );
+  normalized.rerolls = Math.max(
+    0,
+    Math.min(
+      normalized.rerollCap,
+      Math.floor(Number(raw.rerolls ?? normalized.rerollCap) || 0)
+    )
+  );
 
   if (raw.activeGame && typeof raw.activeGame === "object") {
-    const g = raw.activeGame;
-    const choices = Array.isArray(g.choices)
-      ? g.choices.map(normalizeChoice)
+    const game = raw.activeGame;
+    const choices = Array.isArray(game.choices)
+      ? game.choices.map(normalizeChoice)
       : [];
 
-    if (clampMoney(g.startAmount) > 0 &&
-        choices.length === 2 && choices.every(Boolean)) {
-      state.activeGame = {
-        startAmount: clampMoney(g.startAmount),
-        money: clampMoney(g.money),
-        turn: Math.max(1, Math.floor(Number(g.turn) || 1)),
+    const expectedChoiceCount = game.threeChoiceMode
+      ? 3
+      : (choices.length === 3 ? 3 : 2);
+
+    if (
+      clampMoney(game.startAmount) > 0 &&
+      choices.length === expectedChoiceCount &&
+      choices.every(Boolean)
+    ) {
+      normalized.activeGame = {
+        startAmount: clampMoney(game.startAmount),
+        money: clampMoney(game.money),
+        turn: Math.max(1, Math.floor(Number(game.turn) || 1)),
         choices,
-        forcedColor: g.forcedColor === "blue" || g.forcedColor === "red"
-          ? g.forcedColor : null
+        threeChoiceMode: Boolean(game.threeChoiceMode || choices.length === 3),
+        reduceLossTurns: Math.max(
+          0,
+          Math.min(10, Math.floor(Number(game.reduceLossTurns) || 0))
+        ),
+        safePositiveTurns: Math.max(
+          0,
+          Math.min(10, Math.floor(Number(game.safePositiveTurns) || 0))
+        ),
+        forcedColor:
+          ["blue", "red"].includes(game.forcedColor) ||
+          (game.forcedColor === "green" && choices.length === 3)
+            ? game.forcedColor
+            : null
       };
     }
   }
 
   if (raw.pendingSummary && typeof raw.pendingSummary === "object") {
-    state.pendingSummary = {
+    normalized.pendingSummary = {
       startAmount: clampMoney(raw.pendingSummary.startAmount),
       finalAmount: clampMoney(raw.pendingSummary.finalAmount),
       reason: String(raw.pendingSummary.reason || "게임 종료")
     };
   }
 
-  return state;
+  return normalized;
 }
 
 function findLegacyState() {
   for (const key of LEGACY_KEYS) {
     if (key === STORAGE_KEY) continue;
+
     const old = readObject(key);
     if (old) return old;
   }
@@ -332,13 +437,21 @@ function findLegacyState() {
   try {
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (!key || key === STORAGE_KEY || !/risk|game/i.test(key)) continue;
+
+      if (!key || key === STORAGE_KEY || !/risk|game/i.test(key)) {
+        continue;
+      }
 
       const old = readObject(key);
+
       if (old && (
-        "budget" in old || "money" in old ||
-        "gameLimit" in old || "rerolls" in old
-      )) return old;
+        "budget" in old ||
+        "money" in old ||
+        "gameLimit" in old ||
+        "rerolls" in old
+      )) {
+        return old;
+      }
     }
   } catch {}
 
@@ -350,11 +463,14 @@ function loadState() {
   if (current) return normalizeState(current);
 
   const old = findLegacyState();
+
   if (old) {
     const migrated = normalizeState(old);
+
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
     } catch {}
+
     return migrated;
   }
 
@@ -366,7 +482,8 @@ let currentScreen = "homeScreen";
 let currentBankTab = "bank";
 let moneyModalMode = null;
 let saveTimer = null;
-let lastActiveTick = document.visibilityState === "visible" ? Date.now() : null;
+let lastActiveTick =
+  document.visibilityState === "visible" ? Date.now() : null;
 
 function saveState() {
   try {
@@ -384,12 +501,12 @@ function saveState() {
 
 function scheduleSave() {
   if (saveTimer !== null) clearTimeout(saveTimer);
+
   saveTimer = setTimeout(() => {
     saveTimer = null;
     saveState();
   }, 100);
 }
-
 /* =========================
    화면 이동
 ========================= */
@@ -420,18 +537,14 @@ function showScreen(id) {
 
   $("backButton").classList.toggle(
     "hidden",
-    id === "homeScreen" || id === "gameScreen" ||
-    id === "summaryScreen" || Boolean(state.activeGame) ||
+    id === "homeScreen" ||
+    id === "gameScreen" ||
+    id === "summaryScreen" ||
+    Boolean(state.activeGame) ||
     Boolean(state.pendingSummary)
   );
 
-  if (id === "amountScreen") {
-    // 금액 설정창에 진입할 때마다 입력값을 비운다.
-    $("gameAmount").value = "";
-    $("amountError").textContent = "";
-    updateAmountScreen();
-  }
-
+  if (id === "amountScreen") updateAmountScreen();
   if (id === "gameScreen") renderGame();
   if (id === "summaryScreen") renderSummary();
   if (id === "shopScreen") updateShop();
@@ -460,32 +573,55 @@ $("backButton").addEventListener("click", () => {
 
 function updateHome() {
   $("budgetDisplay").textContent = moneyText(state.budget);
-  $("rerollDisplay").textContent = `${state.rerolls} / ${state.rerollCap}개`;
+  $("rerollDisplay").textContent =
+    `${state.rerolls} / ${state.rerollCap}개`;
 }
 
 $("startGameButton").addEventListener("click", () => {
   if (state.pendingSummary) return showScreen("summaryScreen");
   if (state.activeGame) return showScreen("gameScreen");
+
   showScreen("amountScreen");
 });
 
 function updateAmountScreen() {
+  $("threeChoiceModeWrap").classList.toggle(
+    "hidden",
+    !state.threeChoiceUnlocked
+  );
+
+  $("threeChoiceMode").checked = Boolean(
+    state.threeChoiceMode && state.threeChoiceUnlocked
+  );
+
   const maximum = Math.min(state.budget, state.gameLimit);
+
   $("availableBudgetDisplay").textContent = moneyText(state.budget);
   $("gameLimitDisplay").textContent = moneyText(state.gameLimit);
   $("gameAmount").max = String(maximum);
 
   if (maximum < 1000) {
     $("confirmStartButton").disabled = true;
-    $("amountError").textContent = "게임을 시작하려면 최소 1,000원이 필요합니다.";
+    $("amountError").textContent =
+      "게임을 시작하려면 최소 1,000원이 필요합니다.";
   } else {
     $("confirmStartButton").disabled = false;
+
+    const value = Number($("gameAmount").value);
+
+    if (!Number.isFinite(value) || value < 1000) {
+      $("gameAmount").value = String(Math.min(1000, maximum));
+    }
+
     $("amountError").textContent = "";
   }
 }
 
 function readGameAmount() {
-  const maximum = Math.floor(Math.min(state.budget, state.gameLimit) / 1000) * 1000;
+  const maximum = Math.floor(
+    Math.min(state.budget, state.gameLimit) / 1000
+  ) * 1000;
+
   const raw = Number($("gameAmount").value);
 
   if (!Number.isFinite(raw) || raw < 1000) {
@@ -494,6 +630,7 @@ function readGameAmount() {
   }
 
   const amount = Math.min(Math.floor(raw / 1000) * 1000, maximum);
+
   if (amount < 1000) {
     $("amountError").textContent = "사용 가능한 금액이 부족합니다.";
     return null;
@@ -501,23 +638,40 @@ function readGameAmount() {
 
   $("gameAmount").value = String(amount);
   $("amountError").textContent = "";
+
   return amount;
 }
 
 $("amountMinus").addEventListener("click", () => {
   const value = Number($("gameAmount").value) || 1000;
+
   $("gameAmount").value = String(Math.max(1000, value - 1000));
   readGameAmount();
 });
 
 $("amountPlus").addEventListener("click", () => {
   const value = Number($("gameAmount").value) || 0;
-  const max = Math.floor(Math.min(state.budget, state.gameLimit) / 1000) * 1000;
+
+  const max = Math.floor(
+    Math.min(state.budget, state.gameLimit) / 1000
+  ) * 1000;
+
   $("gameAmount").value = String(Math.min(max, value + 1000));
   readGameAmount();
 });
 
 $("gameAmount").addEventListener("change", readGameAmount);
+
+$("threeChoiceMode").addEventListener("change", () => {
+  if (!state.threeChoiceUnlocked) {
+    state.threeChoiceMode = false;
+    $("threeChoiceMode").checked = false;
+    return;
+  }
+
+  state.threeChoiceMode = $("threeChoiceMode").checked;
+  saveState();
+});
 
 $("confirmStartButton").addEventListener("click", () => {
   if (state.activeGame || state.pendingSummary) return;
@@ -526,11 +680,20 @@ $("confirmStartButton").addEventListener("click", () => {
   if (amount === null) return;
 
   state.budget -= amount;
+
   state.activeGame = {
     startAmount: amount,
     money: amount,
     turn: 1,
-    choices: generateChoices(),
+    threeChoiceMode: Boolean(
+      state.threeChoiceMode && state.threeChoiceUnlocked
+    ),
+    reduceLossTurns: 0,
+    safePositiveTurns: 0,
+    choices: generateChoices(
+      null,
+      state.threeChoiceMode && state.threeChoiceUnlocked ? 3 : 2
+    ),
     forcedColor: null
   };
 
@@ -547,10 +710,17 @@ function renderGame() {
   const game = state.activeGame;
   if (!game) return;
 
-  $("gameRerollDisplay").textContent = `${state.rerolls} / ${state.rerollCap}`;
+  $("gameRerollDisplay").textContent =
+    `${state.rerolls} / ${state.rerollCap}`;
   $("gameMoneyDisplay").textContent = moneyText(game.money);
   $("turnDisplay").textContent = String(game.turn);
+
   $("forcedHint").classList.toggle("hidden", !game.forcedColor);
+
+  const isThree = game.choices.length === 3;
+  const grid = document.querySelector(".choice-grid");
+
+  grid.classList.toggle("three-choice", isThree);
 
   const ui = [
     {
@@ -559,7 +729,8 @@ function renderGame() {
       title: $("leftTitle"),
       penalty: $("leftDescription"),
       overlay: $("leftOverlay"),
-      colorName: "blue"
+      colorName: "blue",
+      label: "파랑"
     },
     {
       button: $("choiceRight"),
@@ -567,15 +738,31 @@ function renderGame() {
       title: $("rightTitle"),
       penalty: $("rightDescription"),
       overlay: $("rightOverlay"),
-      colorName: "red"
+      colorName: "red",
+      label: "빨강"
+    },
+    {
+      button: $("choiceGreen"),
+      color: $("greenColor"),
+      title: $("greenTitle"),
+      penalty: $("greenDescription"),
+      overlay: $("greenOverlay"),
+      colorName: "green",
+      label: "초록"
     }
   ];
 
   ui.forEach((item, index) => {
+    const visible = index < game.choices.length;
+
+    item.button.classList.toggle("hidden", !visible);
+    if (!visible) return;
+
     const choice = game.choices[index];
-    item.color.textContent = item.colorName === "blue" ? "BLUE" : "RED";
+
+    item.color.textContent = item.colorName.toUpperCase();
     item.title.textContent = choice.title;
-    item.penalty.textContent = choice.penalty;
+    item.penalty.textContent = choice.penalty || "패널티: 없음";
 
     const blocked = Boolean(
       game.forcedColor && game.forcedColor !== item.colorName
@@ -583,9 +770,10 @@ function renderGame() {
 
     item.button.disabled = blocked;
     item.overlay.classList.toggle("hidden", !blocked);
+
     item.button.setAttribute(
       "aria-label",
-      `${item.colorName === "blue" ? "파랑" : "빨강"} ${choice.title}. ${choice.penalty}`
+      `${item.label} ${choice.title}. ${choice.penalty}`
     );
   });
 
@@ -601,20 +789,37 @@ function losePercent(percent) {
   const game = state.activeGame;
   if (!game) return;
 
+  // 실제 손실 효과가 발생한 순간 금액이 1,000원 이하라면 0원 처리
   if (game.money <= 1000) {
     game.money = 0;
     return;
   }
 
-  game.money = clampMoney(Math.round(game.money * (1 - percent / 100)));
+  game.money = clampMoney(
+    Math.round(game.money * (1 - percent / 100))
+  );
 }
 
 function applyPenalty(choice, selectedColor) {
   const game = state.activeGame;
   if (!game) return "";
 
-  if (Math.random() * 100 >= choice.penaltyChance) {
-    return "패널티가 발생하지 않았습니다.";
+  const isLossPenalty = [
+    "loss10",
+    "loss25",
+    "loss50",
+    "totalLoss"
+  ].includes(choice.penaltyType);
+
+  const effectiveChance =
+    isLossPenalty && game.reduceLossTurns > 0
+      ? choice.penaltyChance * 0.35
+      : choice.penaltyChance;
+
+  if (Math.random() * 100 >= effectiveChance) {
+    return choice.bonusType
+      ? "보너스가 적용됩니다."
+      : "패널티가 발생하지 않았습니다.";
   }
 
   switch (choice.penaltyType) {
@@ -624,35 +829,11 @@ function applyPenalty(choice, selectedColor) {
         ? "패널티 발동: 게임 금액이 0원이 되었습니다."
         : "패널티 발동: 현재 금액의 10%를 잃었습니다.";
 
-    case "loss15":
-      losePercent(15);
-      return game.money === 0
-        ? "패널티 발동: 게임 금액이 0원이 되었습니다."
-        : "패널티 발동: 현재 금액의 15%를 잃었습니다.";
-
-    case "loss20":
-      losePercent(20);
-      return game.money === 0
-        ? "패널티 발동: 게임 금액이 0원이 되었습니다."
-        : "패널티 발동: 현재 금액의 20%를 잃었습니다.";
-
     case "loss25":
       losePercent(25);
       return game.money === 0
         ? "패널티 발동: 게임 금액이 0원이 되었습니다."
         : "패널티 발동: 현재 금액의 25%를 잃었습니다.";
-
-    case "loss35":
-      losePercent(35);
-      return game.money === 0
-        ? "패널티 발동: 게임 금액이 0원이 되었습니다."
-        : "패널티 발동: 현재 금액의 35%를 잃었습니다.";
-
-    case "loss40":
-      losePercent(40);
-      return game.money === 0
-        ? "패널티 발동: 게임 금액이 0원이 되었습니다."
-        : "패널티 발동: 현재 금액의 40%를 잃었습니다.";
 
     case "loss50":
       losePercent(50);
@@ -660,15 +841,21 @@ function applyPenalty(choice, selectedColor) {
         ? "패널티 발동: 게임 금액이 0원이 되었습니다."
         : "패널티 발동: 현재 금액의 50%를 잃었습니다.";
 
-    case "loss60":
-      losePercent(60);
-      return game.money === 0
-        ? "패널티 발동: 게임 금액이 0원이 되었습니다."
-        : "패널티 발동: 현재 금액의 60%를 잃었습니다.";
+    case "forceBlue":
+    case "forceRed":
+    case "forceGreen": {
+      game.forcedColor = choice.penaltyType
+        .replace("force", "")
+        .toLowerCase();
 
-    case "force":
-      game.forcedColor = selectedColor === "blue" ? "red" : "blue";
-      return `패널티 발동: 다음 턴은 ${game.forcedColor === "blue" ? "파랑" : "빨강"}만 선택할 수 있습니다.`;
+      const names = {
+        blue: "파랑",
+        red: "빨강",
+        green: "초록"
+      };
+
+      return `패널티 발동: 다음 턴은 ${names[game.forcedColor]}만 선택할 수 있습니다.`;
+    }
 
     case "totalLoss":
       game.money = 0;
@@ -683,15 +870,19 @@ function chooseOption(index) {
   const game = state.activeGame;
   if (!game || state.pendingSummary) return;
 
-  const color = index === 0 ? "blue" : "red";
+  const colors = ["blue", "red", "green"];
+  const color = colors[index];
+
   if (game.forcedColor && game.forcedColor !== color) return;
 
   const choice = game.choices[index];
   if (!choice) return;
 
   game.forcedColor = null;
+
   const before = game.money;
 
+  // 기본 효과를 먼저 적용하고, 그다음 패널티를 판정
   if (choice.effect < 0) {
     losePercent(Math.abs(choice.effect));
   } else {
@@ -712,11 +903,48 @@ function chooseOption(index) {
     return;
   }
 
+  if (game.reduceLossTurns > 0) {
+    game.reduceLossTurns -= 1;
+  }
+
+  if (game.safePositiveTurns > 0) {
+    game.safePositiveTurns -= 1;
+  }
+
+  if (choice.bonusType === "reduceLoss") {
+    game.reduceLossTurns = Math.min(
+      10,
+      Math.max(game.reduceLossTurns, choice.bonusTurns || 5)
+    );
+  }
+
+  if (choice.bonusType === "safePositive") {
+    game.safePositiveTurns = Math.min(
+      10,
+      Math.max(game.safePositiveTurns, choice.bonusTurns || 10)
+    );
+  }
+
   game.turn += 1;
-  game.choices = generateChoices(game.choices);
+
+  game.choices = generateChoices(
+    game.choices,
+    game.threeChoiceMode ? 3 : 2,
+    game.safePositiveTurns > 0
+  );
+
+  const bonusStatus = [
+    game.reduceLossTurns > 0
+      ? `손실 패널티 감소 ${game.reduceLossTurns}턴`
+      : "",
+    game.safePositiveTurns > 0
+      ? `안전한 양수 선택지 확률 증가 ${game.safePositiveTurns}턴`
+      : ""
+  ].filter(Boolean).join(" · ");
 
   $("gameMessage").textContent =
-    `${choice.title}: ${moneyText(before)} → ${moneyText(game.money)}. ${resultMessage}`;
+    `${choice.title}: ${moneyText(before)} → ${moneyText(game.money)}. ` +
+    `${resultMessage}${bonusStatus ? " " + bonusStatus : ""}`;
 
   saveState();
   updateAll();
@@ -725,18 +953,25 @@ function chooseOption(index) {
 
 $("choiceLeft").addEventListener("click", () => chooseOption(0));
 $("choiceRight").addEventListener("click", () => chooseOption(1));
+$("choiceGreen").addEventListener("click", () => chooseOption(2));
 
 $("rerollButton").addEventListener("click", () => {
   const game = state.activeGame;
   if (!game || state.rerolls <= 0) return;
 
   state.rerolls -= 1;
-  game.choices = generateChoices(game.choices);
 
-  // 금액과 강제 색상은 그대로 유지
+  game.choices = generateChoices(
+    game.choices,
+    game.threeChoiceMode ? 3 : 2,
+    game.safePositiveTurns > 0
+  );
+
+  // 금액과 강제 색상은 유지
   saveState();
   updateAll();
   renderGame();
+
   $("gameMessage").textContent = "선택지가 바뀌었습니다.";
 });
 
@@ -753,6 +988,7 @@ function finishGame(reason) {
   if (!state.activeGame || state.pendingSummary) return;
 
   const game = state.activeGame;
+
   state.pendingSummary = {
     startAmount: clampMoney(game.startAmount),
     finalAmount: clampMoney(game.money),
@@ -760,6 +996,7 @@ function finishGame(reason) {
   };
 
   state.activeGame = null;
+
   saveState();
   showScreen("summaryScreen");
 }
@@ -771,14 +1008,19 @@ function renderSummary() {
   const profit = result.finalAmount - result.startAmount;
 
   $("summaryTitle").textContent =
-    profit > 0 ? "수익 발생!" : profit < 0 ? "손실 발생" : "원금 유지";
+    profit > 0 ? "수익 발생!" :
+    profit < 0 ? "손실 발생" :
+    "원금 유지";
 
   $("summaryStart").textContent = moneyText(result.startAmount);
   $("summaryFinal").textContent = moneyText(result.finalAmount);
 
   const el = $("summaryProfit");
-  el.textContent = (profit > 0 ? "+" : profit < 0 ? "−" : "") +
+
+  el.textContent =
+    (profit > 0 ? "+" : profit < 0 ? "−" : "") +
     moneyText(Math.abs(profit));
+
   el.classList.toggle("negative", profit < 0);
   $("summaryMessage").textContent = result.reason;
 }
@@ -796,20 +1038,62 @@ $("settleButton").addEventListener("click", () => {
 });
 
 /* =========================
+   공통 확인 창
+========================= */
+
+let confirmAction = null;
+
+function askConfirm(message, action, title = "구매 확인") {
+  confirmAction = typeof action === "function" ? action : null;
+
+  $("confirmModalTitle").textContent = title;
+  $("confirmModalMessage").textContent = message;
+  $("confirmModal").classList.remove("hidden");
+}
+
+function closeConfirm() {
+  $("confirmModal").classList.add("hidden");
+  confirmAction = null;
+}
+
+$("cancelConfirmButton").addEventListener("click", closeConfirm);
+
+$("acceptConfirmButton").addEventListener("click", () => {
+  const action = confirmAction;
+
+  closeConfirm();
+
+  if (action) action();
+});
+
+$("confirmModal").addEventListener("click", event => {
+  if (event.target === $("confirmModal")) closeConfirm();
+});
+
+/* =========================
    상점
 ========================= */
 
 function limitUpgrade() {
-  const nextLimit = Math.min(MAX_MONEY, state.gameLimit + 5000);
-  return { nextLimit, cost: clampMoney(nextLimit * 2) };
+  let increment = 5000;
+  let cost = 50000;
+
+  while (
+    state.gameLimit >= increment * 10 &&
+    Number.isFinite(increment * 10) &&
+    Number.isFinite(cost * 10)
+  ) {
+    increment *= 10;
+    cost *= 10;
+  }
+
+  const nextLimit = state.gameLimit + increment;
+
+  return { nextLimit, increment, cost };
 }
 
 function capUpgradeCost() {
-  return clampMoney(5000 + ((state.rerollCap - 5) / 5) * 2000);
-}
-
-function bankRateUpgradeCost() {
-  return clampMoney(state.bankRatePercent * 1000000);
+  return 5000 + ((state.rerollCap - 5) / 5) * 2000;
 }
 
 function updateShop() {
@@ -818,132 +1102,140 @@ function updateShop() {
   $("shopLimitDisplay").textContent = moneyText(state.gameLimit);
   $("limitPrice").textContent = moneyText(upgrade.cost);
 
-  // 구매 불가 상품도 눌러서 이유를 확인할 수 있도록 버튼을 비활성화하지 않는다.
-  $("buyLimitButton").disabled = false;
-  $("buyRerollButton").disabled = false;
-  $("buyCapButton").disabled = false;
-  $("buyBankRateButton").disabled = false;
+  $("buyLimitButton").disabled =
+    state.budget < upgrade.cost ||
+    !Number.isFinite(upgrade.nextLimit);
 
-  $("shopRerollDisplay").textContent = `${state.rerolls} / ${state.rerollCap}`;
+  $("buyLimitButton").querySelector("small").textContent =
+    $("buyLimitButton").disabled ? "구매불가" : "구매";
+
+  $("shopRerollDisplay").textContent =
+    `${state.rerolls} / ${state.rerollCap}`;
+
+  $("buyRerollButton").disabled =
+    state.rerolls >= state.rerollCap ||
+    state.budget < 10000;
+
+  $("buyRerollButton").querySelector("small").textContent =
+    $("buyRerollButton").disabled ? "구매불가" : "구매";
+
   $("shopCapDisplay").textContent = `${state.rerollCap}개`;
   $("capPrice").textContent = moneyText(capUpgradeCost());
 
-  $("shopBankRateDisplay").textContent = `${state.bankRatePercent}%`;
-  $("bankRatePrice").textContent = state.bankRatePercent >= 10
-    ? "최대치"
-    : moneyText(bankRateUpgradeCost());
+  $("buyCapButton").disabled =
+    state.rerollCap >= 50 ||
+    state.budget < capUpgradeCost();
+
+  $("buyCapButton").querySelector("small").textContent =
+    $("buyCapButton").disabled ? "구매불가" : "구매";
+
+  $("threeChoiceUnlockDisplay").textContent =
+    state.threeChoiceUnlocked ? "해금 완료" : "미해금";
+
+  $("threeChoicePrice").textContent =
+    state.threeChoiceUnlocked ? "구매 완료" : moneyText(100000000);
+
+  $("buyThreeChoiceButton").disabled =
+    state.threeChoiceUnlocked ||
+    state.budget < 100000000;
+
+  $("threeChoiceBuyLabel").textContent =
+    state.threeChoiceUnlocked
+      ? "구매불가"
+      : ($("buyThreeChoiceButton").disabled ? "구매불가" : "구매");
 }
 
-let shopMessageTimer = null;
-let shopMessageFadeTimer = null;
-
-function shopMessage(message, isError = false) {
-  const el = $("shopMessage");
-
-  if (shopMessageTimer !== null) clearTimeout(shopMessageTimer);
-  if (shopMessageFadeTimer !== null) clearTimeout(shopMessageFadeTimer);
-
-  el.textContent = message;
-  el.classList.toggle("shop-message-error", isError);
-  el.classList.remove("shop-message-fading");
-  el.style.opacity = "1";
-
-  shopMessageTimer = setTimeout(() => {
-    el.classList.add("shop-message-fading");
-
-    shopMessageFadeTimer = setTimeout(() => {
-      el.textContent = "";
-      el.classList.remove("shop-message-fading", "shop-message-error");
-      el.style.opacity = "1";
-      shopMessageTimer = null;
-      shopMessageFadeTimer = null;
-    }, 850);
-  }, 1500);
+function shopMessage(message) {
+  $("shopMessage").textContent = message;
 }
 
 $("buyLimitButton").addEventListener("click", () => {
   const upgrade = limitUpgrade();
 
-  if (state.gameLimit >= MAX_MONEY) {
-    shopMessage("게임 한도가 최대치입니다.", true);
-    return;
+  if (
+    state.budget < upgrade.cost ||
+    !Number.isFinite(upgrade.nextLimit)
+  ) {
+    return shopMessage("예산이 부족하거나 한도를 더 올릴 수 없습니다.");
   }
 
-  if (state.budget < upgrade.cost) {
-    shopMessage("예산 부족", true);
-    return;
-  }
+  askConfirm(
+    `게임 한도를 ${moneyText(upgrade.increment)} 올립니다. 비용은 ${moneyText(upgrade.cost)}입니다. 정말 구매하시겠습니까?`,
+    () => {
+      const current = limitUpgrade();
 
-  state.budget -= upgrade.cost;
-  state.gameLimit = upgrade.nextLimit;
+      if (state.budget < current.cost) {
+        return shopMessage("예산이 부족합니다.");
+      }
 
-  shopMessage(`게임 한도가 ${moneyText(state.gameLimit)}로 증가했습니다.`);
-  saveState();
-  updateAll();
+      state.budget -= current.cost;
+      state.gameLimit = current.nextLimit;
+
+      shopMessage(
+        `게임 한도가 ${moneyText(state.gameLimit)}로 증가했습니다.`
+      );
+
+      saveState();
+      updateAll();
+    }
+  );
 });
 
 $("buyRerollButton").addEventListener("click", () => {
-  if (state.rerolls >= state.rerollCap) {
-    shopMessage("리롤 수가 최대치입니다", true);
-    return;
-  }
+  if (state.rerolls >= state.rerollCap || state.budget < 10000) return;
 
-  if (state.budget < 10000) {
-    shopMessage("예산 부족", true);
-    return;
-  }
+  askConfirm("리롤 1회를 10,000원에 구매하시겠습니까?", () => {
+    if (state.rerolls >= state.rerollCap || state.budget < 10000) return;
 
-  state.budget -= 10000;
-  state.rerolls += 1;
+    state.budget -= 10000;
+    state.rerolls += 1;
 
-  shopMessage("리롤 1회를 구매했습니다.");
-  saveState();
-  updateAll();
+    shopMessage("");
+    saveState();
+    updateAll();
+  });
 });
 
 $("buyCapButton").addEventListener("click", () => {
   const cost = capUpgradeCost();
 
-  if (state.rerollCap >= 50) {
-    shopMessage("리롤 수가 최대치입니다", true);
-    return;
-  }
+  if (state.rerollCap >= 50 || state.budget < cost) return;
 
-  if (state.budget < cost) {
-    shopMessage("예산 부족", true);
-    return;
-  }
+  askConfirm(
+    `리롤 최대치를 5회 늘립니다. 비용은 ${moneyText(cost)}입니다. 보유 리롤은 늘어나지 않습니다. 정말 구매하시겠습니까?`,
+    () => {
+      const actualCost = capUpgradeCost();
 
-  state.budget -= cost;
-  state.rerollCap = Math.min(50, state.rerollCap + 5);
-  state.rerolls = Math.min(state.rerolls, state.rerollCap);
+      if (state.rerollCap >= 50 || state.budget < actualCost) return;
 
-  shopMessage(`리롤 최대치가 ${state.rerollCap}회가 되었습니다.`);
-  saveState();
-  updateAll();
+      state.budget -= actualCost;
+      state.rerollCap = Math.min(50, state.rerollCap + 5);
+      state.rerolls = Math.min(state.rerolls, state.rerollCap);
+
+      shopMessage(`리롤 최대치가 ${state.rerollCap}회가 되었습니다.`);
+
+      saveState();
+      updateAll();
+    }
+  );
 });
 
-$("buyBankRateButton").addEventListener("click", () => {
-  if (state.bankRatePercent >= 10) {
-    shopMessage("이자 최대치", true);
-    return;
-  }
+$("buyThreeChoiceButton").addEventListener("click", () => {
+  if (state.threeChoiceUnlocked || state.budget < 100000000) return;
 
-  const cost = bankRateUpgradeCost();
+  askConfirm("3개 선택지 모드를 1억 원에 해금하시겠습니까?", () => {
+    if (state.threeChoiceUnlocked || state.budget < 100000000) return;
 
-  if (state.budget < cost) {
-    shopMessage("예산 부족", true);
-    return;
-  }
+    state.budget -= 100000000;
+    state.threeChoiceUnlocked = true;
+    state.threeChoiceMode = false;
 
-  state.budget -= cost;
-  state.bankRatePercent += 1;
+    saveState();
+    updateAll();
 
-  shopMessage(`은행 이자율이 ${state.bankRatePercent}%로 증가했습니다.`);
-  saveState();
-  updateAll();
+    shopMessage("3개 선택지 모드가 해금되었습니다.");
+  });
 });
-
 /* =========================
    은행
 ========================= */
@@ -957,19 +1249,51 @@ function syncBankClock(now = Date.now()) {
 
   while (state.bankElapsedMs >= BANK_MINUTE_MS) {
     state.bankElapsedMs -= BANK_MINUTE_MS;
-    const interest = Math.floor(state.bankPrincipal * state.bankRatePercent / 100);
+
+    const interest = Math.floor(
+      state.bankPrincipal * (state.bankRate / 100)
+    );
+
     state.bankInterest = addMoney(state.bankInterest, interest);
   }
 }
 
 function resetBankMinute() {
   state.bankElapsedMs = 0;
-  lastActiveTick = document.visibilityState === "visible" ? Date.now() : null;
+  lastActiveTick =
+    document.visibilityState === "visible" ? Date.now() : null;
+}
+
+function bankRateUpgradeCost() {
+  return state.bankRate >= 10 ? 0 : state.bankRate * 1000000;
 }
 
 function updateBank() {
-  $("bankPrincipalDisplay").textContent = moneyText(state.bankPrincipal);
-  $("bankInterestDisplay").textContent = moneyText(state.bankInterest);
+  $("bankRateDisplay").textContent = `${state.bankRate}%`;
+
+  $("bankRateDescription").textContent =
+    `분당 ${state.bankRate}% 단리입니다. 앱이 활성화된 시간만 계산하며, 1분이 지날 때 이자가 반영됩니다.`;
+
+  const rateCost = bankRateUpgradeCost();
+
+  $("upgradeBankRateButton").disabled =
+    state.bankRate >= 10 ||
+    state.budget < rateCost;
+
+  $("upgradeBankRateButton").textContent =
+    state.bankRate >= 10 ? "최대 이자율" : "이자율 올리기";
+
+  $("bankUpgradeInfo").textContent =
+    state.bankRate >= 10
+      ? "최대 이자율에 도달했습니다."
+      : `다음 업그레이드: ${moneyText(rateCost)} (${state.bankRate}% → ${state.bankRate + 1}%)`;
+
+  $("bankPrincipalDisplay").textContent =
+    moneyText(state.bankPrincipal);
+
+  $("bankInterestDisplay").textContent =
+    moneyText(state.bankInterest);
+
   $("bankTotalDisplay").textContent =
     moneyText(addMoney(state.bankPrincipal, state.bankInterest));
 
@@ -979,13 +1303,11 @@ function updateBank() {
 
   $("bankNextInterestDisplay").textContent =
     `다음 이자까지 ${clockText(secondsLeft)}`;
-
-  $("bankRateDescription").textContent =
-    `현재 이자율은 분당 ${state.bankRatePercent}% 단리입니다. 앱이 활성화된 시간만 계산하며, 1분이 지날 때 이자가 반영됩니다.`;
 }
 
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
+    // 화면이 숨겨지기 직전까지의 활성 시간만 반영
     syncBankClock(Date.now());
     lastActiveTick = null;
     saveState();
@@ -997,14 +1319,45 @@ document.addEventListener("visibilitychange", () => {
 
 function setBankTab(tab) {
   currentBankTab = tab === "wage" ? "wage" : "bank";
-  $("bankPanel").classList.toggle("hidden", currentBankTab !== "bank");
-  $("wagePanel").classList.toggle("hidden", currentBankTab !== "wage");
+
+  $("bankPanel").classList.toggle(
+    "hidden",
+    currentBankTab !== "bank"
+  );
+
+  $("wagePanel").classList.toggle(
+    "hidden",
+    currentBankTab !== "wage"
+  );
+
   $("bankTab").classList.toggle("active", currentBankTab === "bank");
   $("wageTab").classList.toggle("active", currentBankTab === "wage");
 }
 
 $("bankTab").addEventListener("click", () => setBankTab("bank"));
 $("wageTab").addEventListener("click", () => setBankTab("wage"));
+
+$("upgradeBankRateButton").addEventListener("click", () => {
+  const cost = bankRateUpgradeCost();
+
+  if (state.bankRate >= 10 || state.budget < cost) return;
+
+  askConfirm(
+    `은행 이자율을 ${state.bankRate}%에서 ${state.bankRate + 1}%로 올립니다. 비용은 ${moneyText(cost)}입니다. 정말 구매하시겠습니까?`,
+    () => {
+      const actualCost = bankRateUpgradeCost();
+
+      if (state.bankRate >= 10 || state.budget < actualCost) return;
+
+      state.budget -= actualCost;
+      state.bankRate += 1;
+
+      saveState();
+      updateAll();
+    },
+    "이자율 업그레이드"
+  );
+});
 
 /* =========================
    입금 / 출금
@@ -1020,17 +1373,23 @@ function openMoneyModal(mode) {
 
   if (mode === "deposit") {
     $("modalTitle").textContent = "입금";
+
     $("modalDescription").textContent =
       `최소 10,000원 · 사용 가능 예산 ${moneyText(state.budget)}`;
+
     $("moneyAmount").min = "10000";
   } else {
     $("modalTitle").textContent = "출금";
+
     $("modalDescription").textContent =
       `출금 가능 금액 ${moneyText(addMoney(state.bankPrincipal, state.bankInterest))}`;
+
     $("moneyAmount").min = "1";
   }
 
-  $("confirmMoneyButton").textContent = mode === "deposit" ? "입금하기" : "출금하기";
+  $("confirmMoneyButton").textContent =
+    mode === "deposit" ? "입금하기" : "출금하기";
+
   updateBank();
   $("moneyAmount").focus();
 }
@@ -1040,8 +1399,16 @@ function closeMoneyModal() {
   moneyModalMode = null;
 }
 
-$("openDepositButton").addEventListener("click", () => openMoneyModal("deposit"));
-$("openWithdrawButton").addEventListener("click", () => openMoneyModal("withdraw"));
+$("openDepositButton").addEventListener(
+  "click",
+  () => openMoneyModal("deposit")
+);
+
+$("openWithdrawButton").addEventListener(
+  "click",
+  () => openMoneyModal("withdraw")
+);
+
 $("closeMoneyModal").addEventListener("click", closeMoneyModal);
 
 $("moneyModal").addEventListener("click", event => {
@@ -1052,9 +1419,14 @@ $("confirmMoneyButton").addEventListener("click", () => {
   if (!moneyModalMode) return;
 
   syncBankClock(Date.now());
+
   const amount = Number($("moneyAmount").value);
 
-  if (!Number.isSafeInteger(amount) || amount <= 0 || amount > MAX_MONEY) {
+  if (
+    !Number.isFinite(amount) ||
+    !Number.isInteger(amount) ||
+    amount <= 0
+  ) {
     $("modalError").textContent = "올바른 금액을 입력하세요.";
     return;
   }
@@ -1070,13 +1442,9 @@ $("confirmMoneyButton").addEventListener("click", () => {
       return;
     }
 
-    if (state.bankPrincipal + amount > MAX_MONEY) {
-      $("modalError").textContent = "은행 원금 한도를 초과합니다.";
-      return;
-    }
-
     state.budget -= amount;
     state.bankPrincipal = addMoney(state.bankPrincipal, amount);
+
     resetBankMinute();
   } else {
     const total = addMoney(state.bankPrincipal, state.bankInterest);
@@ -1086,12 +1454,18 @@ $("confirmMoneyButton").addEventListener("click", () => {
       return;
     }
 
+    // 누적 이자를 먼저 출금하고, 부족한 부분은 원금에서 차감
     const interestUsed = Math.min(amount, state.bankInterest);
     state.bankInterest -= interestUsed;
 
     const principalUsed = amount - interestUsed;
-    state.bankPrincipal = Math.max(0, state.bankPrincipal - principalUsed);
+    state.bankPrincipal = Math.max(
+      0,
+      state.bankPrincipal - principalUsed
+    );
+
     state.budget = addMoney(state.budget, amount);
+
     resetBankMinute();
   }
 
@@ -1106,6 +1480,8 @@ $("confirmMoneyButton").addEventListener("click", () => {
 
 function updateWage() {
   const remaining = Math.max(0, state.wageNextAt - Date.now());
+
+  $("wageReadyDot").classList.toggle("hidden", remaining > 0);
   $("claimWageButton").disabled = remaining > 0;
 
   if (remaining <= 0) {
@@ -1138,6 +1514,32 @@ $("claimWageButton").addEventListener("click", () => {
 });
 
 /* =========================
+   전체 초기화
+========================= */
+
+$("resetGameButton").addEventListener("click", () => {
+  askConfirm(
+    "모든 진행 데이터를 초기화할까요? 예산, 게임 한도, 리롤, 은행 원금과 이자, 이자율, 시급 대기 시간, 해금 항목과 진행 중인 게임이 모두 초기 상태로 돌아갑니다. 이 작업은 되돌릴 수 없습니다.",
+    () => {
+      state = defaultState();
+
+      lastActiveTick =
+        document.visibilityState === "visible" ? Date.now() : null;
+
+      moneyModalMode = null;
+      $("moneyModal").classList.add("hidden");
+      $("gameMessage").textContent = "";
+      $("shopMessage").textContent = "";
+
+      saveState();
+      updateAll();
+      showScreen("homeScreen");
+    },
+    "전체 초기화 확인"
+  );
+});
+
+/* =========================
    전체 갱신
 ========================= */
 
@@ -1161,13 +1563,16 @@ if ("serviceWorker" in navigator) {
 
   navigator.serviceWorker.addEventListener("controllerchange", () => {
     if (reloading) return;
+
     reloading = true;
     window.location.reload();
   });
 
   window.addEventListener("load", async () => {
     try {
-      const registration = await navigator.serviceWorker.register("./sw.js");
+      const registration =
+        await navigator.serviceWorker.register("./sw.js");
+
       await registration.update();
 
       setInterval(() => {
