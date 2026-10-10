@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "risk-game-cache-v32";
+const CACHE_NAME = "risk-game-cache-v33";
 
 const APP_FILES = [
   "./",
@@ -8,6 +8,7 @@ const APP_FILES = [
   "./style.css",
   "./script.js",
   "./manifest.json",
+  "./icon.svg",
   "./supabase-config.js",
   "./friends.js"
 ];
