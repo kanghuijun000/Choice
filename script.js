@@ -1442,14 +1442,14 @@ function openMoneyModal(mode) {
     $("modalTitle").textContent = "입금";
 
     $("modalDescription").textContent =
-      `최소 10,000원 · 사용 가능 예산 ${moneyText(state.budget)}`;
+      `입금 가능 금액 ${moneyText(state.budget)}`;
 
-    $("moneyAmount").min = "10000";
+    $("moneyAmount").min = "1";
   } else {
     $("modalTitle").textContent = "출금";
 
     $("modalDescription").textContent =
-      `출금 가능 금액 ${moneyText(addMoney(state.bankPrincipal, state.bankInterest))} · 출금 후 10,000원 이상 유지(전액 출금 제외)`;
+      `출금 가능 금액 ${moneyText(addMoney(state.bankPrincipal, state.bankInterest))} · 원하는 금액만큼 출금할 수 있습니다.`;
 
     $("moneyAmount").min = "1";
   }
@@ -1499,11 +1499,6 @@ $("confirmMoneyButton").addEventListener("click", () => {
   }
 
   if (moneyModalMode === "deposit") {
-    if (amount < 10000) {
-      $("modalError").textContent = "최소 입금액은 10,000원입니다.";
-      return;
-    }
-
     if (amount > state.budget) {
       $("modalError").textContent = "보유 예산보다 많이 입금할 수 없습니다.";
       return;
@@ -1518,13 +1513,6 @@ $("confirmMoneyButton").addEventListener("click", () => {
 
     if (amount > total) {
       $("modalError").textContent = "출금 가능 금액보다 많습니다.";
-      return;
-    }
-
-    // 전액 출금은 허용하되, 일부 출금 후에는 은행 잔액이 최소 10,000원이어야 합니다.
-    if (amount !== total && total - amount < 10000) {
-      $("modalError").textContent =
-        `일부 출금 후에는 최소 10,000원이 남아야 합니다. 전액 출금하거나 ${moneyText(Math.max(0, total - 10000))} 이하로 출금하세요.`;
       return;
     }
 
