@@ -2,6 +2,12 @@ name: Deploy Risk Game Supabase backend
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'supabase/**'
+      - '.github/workflows/deploy-supabase-backend.yml'
 
 permissions:
   contents: read
