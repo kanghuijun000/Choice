@@ -329,7 +329,18 @@ function generateChoices(previous = null, count = 2, safeBoost = false) {
 
     for (let i = startIndex; i < candidates.length; i++) {
       const choice = candidates[i];
-      if (picked.some(item => item.id === choice.id)) continue;
+
+      // 화면에 표시되는 효과와 패널티가 완전히 같은 선택지는
+      // 서로 다른 색상 카드에 중복으로 배치하지 않습니다.
+      // 예: 파랑 +5% / 패널티 19% 확률로 25% 손실,
+      //     빨강 +5% / 패널티 19% 확률로 25% 손실
+      const duplicateDisplay = picked.some(item =>
+        item.title === choice.title &&
+        (item.penalty || "패널티: 없음") === (choice.penalty || "패널티: 없음")
+      );
+
+      if (picked.some(item => item.id === choice.id) || duplicateDisplay) continue;
+
       picked.push(choice);
       build(i + 1, picked);
       picked.pop();
