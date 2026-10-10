@@ -266,9 +266,31 @@
         <p class="muted">온라인 계정 연결 후 부여된 4자리 코드는 이름을 바꿔도 유지됩니다.</p>
         <button id="changeProfileNameButton" class="wide-button secondary">이름 변경</button>
       </div>
+      <div class="panel recovery-panel">
+        <p class="eyebrow">ACCOUNT SECURITY</p>
+        <h3>복구 비밀번호 변경</h3>
+        <p class="muted">기존 비밀번호를 확인한 뒤 새 비밀번호를 두 번 입력하세요. 비밀번호는 12자 이상이어야 합니다.</p>
+        <label for="recoveryOldPassword">기존 비밀번호</label>
+        <input id="recoveryOldPassword" type="password" autocomplete="current-password" placeholder="기존 비밀번호" minlength="12" maxlength="128">
+        <label for="recoveryNewPassword">새 비밀번호</label>
+        <input id="recoveryNewPassword" type="password" autocomplete="new-password" placeholder="새 비밀번호 (12자 이상)" minlength="12" maxlength="128">
+        <label for="recoveryNewPasswordConfirm">새 비밀번호 확인</label>
+        <input id="recoveryNewPasswordConfirm" type="password" autocomplete="new-password" placeholder="새 비밀번호 다시 입력" minlength="12" maxlength="128">
+        <button id="changeRecoveryPasswordButton" class="wide-button primary">복구 비밀번호 변경</button>
+        <p id="changeRecoveryMessage" class="recovery-message" role="status"></p>
+      </div>
+      <div class="panel recovery-panel">
+        <p class="eyebrow">RESTORE ACCOUNT</p>
+        <h3>다른 기기에서 복구</h3>
+        <p class="muted">복구 비밀번호를 입력하면 기존 온라인 계정과 친구 코드, 저장된 게임 진행 데이터를 불러옵니다. 현재 기기의 데이터는 복구가 완료될 때까지 삭제하지 않습니다.</p>
+        <label for="restoreRecoveryPassword">복구 비밀번호</label>
+        <input id="restoreRecoveryPassword" type="password" autocomplete="current-password" placeholder="복구 비밀번호 입력" minlength="12" maxlength="128">
+        <button id="restoreRecoveryAccountButton" class="wide-button primary">계정 복구</button>
+        <p id="restoreRecoveryMessage" class="recovery-message" role="status"></p>
+      </div>
       <div class="panel">
-        <p>게임 진행 데이터는 이 기기에 자동 저장됩니다.</p>
-        <p class="muted">초기화하면 예산, 업그레이드, 은행, 시급 대기 시간, 게임 진행 상황이 모두 처음 상태로 돌아갑니다. 계정 이름과 코드는 유지됩니다.</p>
+        <p>게임 진행 데이터는 이 기기에 자동 저장됩니다. 복구 비밀번호를 설정하면 이 계정의 게임 데이터도 온라인에 동기화됩니다.</p>
+        <p class="muted">초기화하면 이 기기의 예산, 업그레이드, 은행, 시급 대기 시간, 게임 진행 상황이 처음 상태로 돌아갑니다. 계정 이름과 코드는 유지됩니다.</p>
         <button id="resetGameButton" class="wide-button danger">게임 데이터 전체 초기화</button>
       </div>
     </section>
@@ -416,10 +438,25 @@
   </div>
 </div>
 
+<div id="recoverySetupModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="recoverySetupTitle">
+  <div class="modal-card profile-modal-card">
+    <p class="eyebrow">STEP 2 / 2</p>
+    <h2 id="recoverySetupTitle">복구 비밀번호 설정</h2>
+    <p class="muted">다른 기기에서 같은 계정을 되찾을 때 사용합니다. 12자 이상의 비밀번호를 입력하고 한 번 더 확인하세요.</p>
+    <label for="setupRecoveryPassword">복구 비밀번호</label>
+    <input id="setupRecoveryPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128" placeholder="12자 이상 입력">
+    <label for="setupRecoveryPasswordConfirm">복구 비밀번호 확인</label>
+    <input id="setupRecoveryPasswordConfirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" placeholder="같은 비밀번호 다시 입력">
+    <p id="setupRecoveryMessage" class="recovery-message" role="status"></p>
+    <button id="saveRecoverySetupButton" class="wide-button primary">비밀번호 설정 완료</button>
+    <button id="skipRecoverySetupButton" class="wide-button secondary">나중에 설정</button>
+  </div>
+</div>
 <div id="purchaseNotice" class="purchase-notice" role="status" aria-live="polite"></div>
-<script src="./script.js?v=19" defer></script>
+<script src="./script.js?v=20" defer></script>
 <script src="./supabase-config.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-<script src="./friends.js?v=16" defer></script>
+<script src="./friends.js?v=17" defer></script>
+<script src="./recovery.js?v=1" defer></script>
 </body>
 </html>
