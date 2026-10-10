@@ -177,7 +177,11 @@
       if (!data?.user || !data?.session) throw new Error("계정 로그인 응답을 확인할 수 없습니다.");
 
       const deviceId = getDeviceId();
+      // 권한 이전 뒤 데이터 로드가 실패해도 같은 기기에서 복구를 재시도할 수 있습니다.
+      // claim 성공 여부를 기록해 실패 원인을 사용자에게 분명히 안내합니다.
+      let deviceClaimed = false;
       await invoke("claim_device", { deviceId, password });
+      deviceClaimed = true;
       const result = await invoke("load_state", { deviceId });
       if (result.payload && typeof window.riskGameApplyCloudState === "function") {
         const applied = window.riskGameApplyCloudState(result.payload);
@@ -195,7 +199,14 @@
       if (!result.payload) await saveCloudState();
       window.dispatchEvent(new Event("risk-game-account-restored"));
     } catch (error) {
-      message("restoreRecoveryMessage", String(error?.message || "계정 복구에 실패했습니다."), true);
+      const detail = String(error?.message || "계정 복구에 실패했습니다.");
+      // 기기 권한을 이전한 뒤 오류가 나면 권한을 되돌리려 하지 않습니다.
+      // 같은 기기에서 다시 시도하면 해당 기기가 현재 소유 기기이므로 데이터 로드를 재시도할 수 있습니다.
+      message("restoreRecoveryMessage",
+        typeof deviceClaimed !== "undefined" && deviceClaimed
+          ? "기기 연결은 완료됐지만 데이터 복구가 끝나지 않았습니다. 데이터는 서버에 남아 있습니다. 같은 기기에서 계정 복구를 다시 눌러 재시도하세요. (" + detail + ")"
+          : detail,
+        true);
     } finally {
       restoreInProgress = false;
       setBusy(["restoreRecoveryAccountButton"], false);
