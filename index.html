@@ -160,6 +160,11 @@
         <p>예산을 사용해 게임 능력을 업그레이드하세요.</p>
       </div>
 
+      <div class="shop-budget panel">
+        <span>현재 예산</span>
+        <strong id="shopBudgetDisplay">10,000원</strong>
+      </div>
+
       <article class="shop-item">
         <div>
           <h3>게임 금액 한도 증가</h3>
@@ -201,6 +206,17 @@
         </div>
         <button id="buyCapButton" class="buy-button">
           <span id="capPrice">5,000원</span><small>구매</small>
+        </button>
+      </article>
+
+      <article class="shop-item">
+        <div>
+          <h3>은행 이자 증가</h3>
+          <p>분당 단리 이자율을 1%p 올립니다. 최대 10%까지 가능합니다.</p>
+          <small>현재 이자율: <strong id="shopBankRateDisplay">1%</strong></small>
+        </div>
+        <button id="buyBankRateButton" class="buy-button">
+          <span id="bankRatePrice">1,000,000원</span><small>구매</small>
         </button>
       </article>
 
@@ -247,11 +263,6 @@
           <p id="bankNextInterestDisplay" class="interest-countdown">다음 이자까지 01:00</p>
           <p id="bankRateDescription" class="muted">분당 1% 단리입니다. 앱이 활성화된 시간만 계산하며, 1분이 지날 때 이자가 반영됩니다.</p>
 
-          <div class="bank-upgrade-row">
-            <span>현재 이자율 <strong id="bankRateDisplay">1%</strong></span>
-            <button id="upgradeBankRateButton" class="secondary">이자율 올리기</button>
-          </div>
-          <p id="bankUpgradeInfo" class="muted">다음 업그레이드: 1,000,000원</p>
         </div>
 
         <div class="two-buttons">

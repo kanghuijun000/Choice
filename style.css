@@ -841,3 +841,44 @@ input::-webkit-inner-spin-button, input::-webkit-outer-spin-button {
     font-size: 10px;
   }
 }
+.shop-budget {
+  margin: 0 0 14px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.shop-budget span {
+  color: var(--muted);
+  font-size: 13px;
+}
+.shop-budget strong {
+  color: #fff;
+  font-size: 21px;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+.buy-button:disabled,
+.buy-button.unavailable {
+  background: #30394a;
+  border-color: #4a5569;
+  color: #9aa5b8;
+  opacity: 1;
+  cursor: not-allowed;
+}
+.buy-button:disabled small,
+.buy-button.unavailable small {
+  color: #9aa5b8;
+}
+#shopMessage {
+  opacity: 1;
+  transition: opacity .85s ease;
+}
+#shopMessage.shop-message-error {
+  color: #ff5268;
+  font-weight: 800;
+}
+#shopMessage.shop-message-fading {
+  opacity: 0;
+}

@@ -544,7 +544,11 @@ function showScreen(id) {
     Boolean(state.pendingSummary)
   );
 
-  if (id === "amountScreen") updateAmountScreen();
+  if (id === "amountScreen") {
+    $("gameAmount").value = "";
+    $("amountError").textContent = "";
+    updateAmountScreen();
+  }
   if (id === "gameScreen") renderGame();
   if (id === "summaryScreen") renderSummary();
   if (id === "shopScreen") updateShop();
@@ -585,61 +589,41 @@ $("startGameButton").addEventListener("click", () => {
 });
 
 function updateAmountScreen() {
-  $("threeChoiceModeWrap").classList.toggle(
-    "hidden",
-    !state.threeChoiceUnlocked
-  );
-
-  $("threeChoiceMode").checked = Boolean(
-    state.threeChoiceMode && state.threeChoiceUnlocked
-  );
-
-  const maximum = Math.min(state.budget, state.gameLimit);
-
+  $("threeChoiceModeWrap").classList.toggle("hidden", !state.threeChoiceUnlocked);
+  $("threeChoiceMode").checked = Boolean(state.threeChoiceMode && state.threeChoiceUnlocked);
+  const maximum = Math.floor(Math.min(state.budget, state.gameLimit) / 1000) * 1000;
   $("availableBudgetDisplay").textContent = moneyText(state.budget);
   $("gameLimitDisplay").textContent = moneyText(state.gameLimit);
   $("gameAmount").max = String(maximum);
-
-  if (maximum < 1000) {
-    $("confirmStartButton").disabled = true;
-    $("amountError").textContent =
-      "게임을 시작하려면 최소 1,000원이 필요합니다.";
-  } else {
-    $("confirmStartButton").disabled = false;
-
-    const value = Number($("gameAmount").value);
-
-    if (!Number.isFinite(value) || value < 1000) {
-      $("gameAmount").value = String(Math.min(1000, maximum));
-    }
-
-    $("amountError").textContent = "";
-  }
+  const unavailable = maximum < 1000;
+  $("confirmStartButton").disabled = unavailable;
+  $("amountError").textContent = unavailable
+    ? "게임을 시작하려면 최소 1,000원이 필요합니다."
+    : "";
 }
 
 function readGameAmount() {
-  const maximum = Math.floor(
-    Math.min(state.budget, state.gameLimit) / 1000
-  ) * 1000;
-
-  const raw = Number($("gameAmount").value);
-
-  if (!Number.isFinite(raw) || raw < 1000) {
-    $("amountError").textContent = "최소 금액은 1,000원입니다.";
+  const maximum = Math.floor(Math.min(state.budget, state.gameLimit) / 1000) * 1000;
+  const textValue = $("gameAmount").value.trim();
+  const raw = Number(textValue);
+  if (!textValue || !Number.isFinite(raw) || !Number.isInteger(raw) || raw < 1000) {
+    $("amountError").textContent = "최소 금액은 1,000원이며 1,000원 단위로 입력하세요.";
     return null;
   }
-
-  const amount = Math.min(Math.floor(raw / 1000) * 1000, maximum);
-
-  if (amount < 1000) {
+  if (raw % 1000 !== 0) {
+    $("amountError").textContent = "1,000원 단위로 입력하세요.";
+    return null;
+  }
+  if (maximum < 1000) {
     $("amountError").textContent = "사용 가능한 금액이 부족합니다.";
     return null;
   }
-
-  $("gameAmount").value = String(amount);
+  if (raw > maximum) {
+    $("amountError").textContent = "입력한 금액이 예산 또는 게임 한도를 초과합니다.";
+    return null;
+  }
   $("amountError").textContent = "";
-
-  return amount;
+  return raw;
 }
 
 $("amountMinus").addEventListener("click", () => {
@@ -1098,55 +1082,55 @@ function capUpgradeCost() {
 
 function updateShop() {
   const upgrade = limitUpgrade();
-
+  const rateCost = bankRateUpgradeCost();
+  $("shopBudgetDisplay").textContent = moneyText(state.budget);
   $("shopLimitDisplay").textContent = moneyText(state.gameLimit);
   $("limitPrice").textContent = moneyText(upgrade.cost);
-
-  $("buyLimitButton").disabled =
-    state.budget < upgrade.cost ||
-    !Number.isFinite(upgrade.nextLimit);
-
-  $("buyLimitButton").querySelector("small").textContent =
-    $("buyLimitButton").disabled ? "구매불가" : "구매";
-
-  $("shopRerollDisplay").textContent =
-    `${state.rerolls} / ${state.rerollCap}`;
-
-  $("buyRerollButton").disabled =
-    state.rerolls >= state.rerollCap ||
-    state.budget < 10000;
-
-  $("buyRerollButton").querySelector("small").textContent =
-    $("buyRerollButton").disabled ? "구매불가" : "구매";
-
+  $("buyLimitButton").disabled = state.budget < upgrade.cost || !Number.isFinite(upgrade.nextLimit);
+  $("buyLimitButton").classList.toggle("unavailable", $("buyLimitButton").disabled);
+  $("buyLimitButton").querySelector("small").textContent = $("buyLimitButton").disabled ? "구매불가" : "구매";
+  $("shopRerollDisplay").textContent = `${state.rerolls} / ${state.rerollCap}`;
+  $("buyRerollButton").disabled = state.rerolls >= state.rerollCap || state.budget < 10000;
+  $("buyRerollButton").classList.toggle("unavailable", $("buyRerollButton").disabled);
+  $("buyRerollButton").querySelector("small").textContent = $("buyRerollButton").disabled ? "구매불가" : "구매";
   $("shopCapDisplay").textContent = `${state.rerollCap}개`;
   $("capPrice").textContent = moneyText(capUpgradeCost());
-
-  $("buyCapButton").disabled =
-    state.rerollCap >= 50 ||
-    state.budget < capUpgradeCost();
-
-  $("buyCapButton").querySelector("small").textContent =
-    $("buyCapButton").disabled ? "구매불가" : "구매";
-
-  $("threeChoiceUnlockDisplay").textContent =
-    state.threeChoiceUnlocked ? "해금 완료" : "미해금";
-
-  $("threeChoicePrice").textContent =
-    state.threeChoiceUnlocked ? "구매 완료" : moneyText(100000000);
-
-  $("buyThreeChoiceButton").disabled =
-    state.threeChoiceUnlocked ||
-    state.budget < 100000000;
-
-  $("threeChoiceBuyLabel").textContent =
-    state.threeChoiceUnlocked
-      ? "구매불가"
-      : ($("buyThreeChoiceButton").disabled ? "구매불가" : "구매");
+  $("buyCapButton").disabled = state.rerollCap >= 50 || state.budget < capUpgradeCost();
+  $("buyCapButton").classList.toggle("unavailable", $("buyCapButton").disabled);
+  $("buyCapButton").querySelector("small").textContent = $("buyCapButton").disabled ? "구매불가" : "구매";
+  $("threeChoiceUnlockDisplay").textContent = state.threeChoiceUnlocked ? "해금 완료" : "미해금";
+  $("threeChoicePrice").textContent = state.threeChoiceUnlocked ? "구매 완료" : moneyText(100000000);
+  $("buyThreeChoiceButton").disabled = state.threeChoiceUnlocked || state.budget < 100000000;
+  $("buyThreeChoiceButton").classList.toggle("unavailable", $("buyThreeChoiceButton").disabled);
+  $("threeChoiceBuyLabel").textContent = state.threeChoiceUnlocked ? "구매불가" : ($("buyThreeChoiceButton").disabled ? "구매불가" : "구매");
+  $("shopBankRateDisplay").textContent = `${state.bankRate}%`;
+  $("bankRatePrice").textContent = state.bankRate >= 10 ? "최대치" : moneyText(rateCost);
+  $("buyBankRateButton").disabled = state.bankRate >= 10 || state.budget < rateCost;
+  $("buyBankRateButton").classList.toggle("unavailable", $("buyBankRateButton").disabled);
+  $("buyBankRateButton").querySelector("small").textContent = state.bankRate >= 10 ? "최대치" : ($("buyBankRateButton").disabled ? "구매불가" : "구매");
 }
 
-function shopMessage(message) {
-  $("shopMessage").textContent = message;
+let shopMessageTimer = null;
+let shopMessageFadeTimer = null;
+function shopMessage(message, isError = false) {
+  const el = $("shopMessage");
+  if (shopMessageTimer !== null) clearTimeout(shopMessageTimer);
+  if (shopMessageFadeTimer !== null) clearTimeout(shopMessageFadeTimer);
+  el.textContent = message;
+  el.classList.toggle("shop-message-error", isError);
+  el.classList.remove("shop-message-fading");
+  el.style.opacity = "1";
+  if (!message) return;
+  shopMessageTimer = setTimeout(() => {
+    el.classList.add("shop-message-fading");
+    shopMessageFadeTimer = setTimeout(() => {
+      el.textContent = "";
+      el.classList.remove("shop-message-fading", "shop-message-error");
+      el.style.opacity = "1";
+      shopMessageTimer = null;
+      shopMessageFadeTimer = null;
+    }, 850);
+  }, 1500);
 }
 
 $("buyLimitButton").addEventListener("click", () => {
@@ -1156,7 +1140,7 @@ $("buyLimitButton").addEventListener("click", () => {
     state.budget < upgrade.cost ||
     !Number.isFinite(upgrade.nextLimit)
   ) {
-    return shopMessage("예산이 부족하거나 한도를 더 올릴 수 없습니다.");
+    return shopMessage("예산 부족", true);
   }
 
   askConfirm(
@@ -1165,7 +1149,7 @@ $("buyLimitButton").addEventListener("click", () => {
       const current = limitUpgrade();
 
       if (state.budget < current.cost) {
-        return shopMessage("예산이 부족합니다.");
+        return shopMessage("예산 부족", true);
       }
 
       state.budget -= current.cost;
@@ -1212,7 +1196,7 @@ $("buyCapButton").addEventListener("click", () => {
       state.rerollCap = Math.min(50, state.rerollCap + 5);
       state.rerolls = Math.min(state.rerolls, state.rerollCap);
 
-      shopMessage(`리롤 최대치가 ${state.rerollCap}회가 되었습니다.`);
+      shopMessage("");
 
       saveState();
       updateAll();
@@ -1233,9 +1217,28 @@ $("buyThreeChoiceButton").addEventListener("click", () => {
     saveState();
     updateAll();
 
-    shopMessage("3개 선택지 모드가 해금되었습니다.");
+    shopMessage("");
   });
 });
+$("buyBankRateButton").addEventListener("click", () => {
+  if (state.bankRate >= 10) return shopMessage("이자 최대치", true);
+  const cost = bankRateUpgradeCost();
+  if (state.budget < cost) return shopMessage("예산 부족", true);
+  askConfirm(
+    `은행 이자율을 ${state.bankRate}%에서 ${state.bankRate + 1}%로 올립니다. 비용은 ${moneyText(cost)}입니다. 정말 구매하시겠습니까?`,
+    () => {
+      const actualCost = bankRateUpgradeCost();
+      if (state.bankRate >= 10 || state.budget < actualCost) return;
+      state.budget -= actualCost;
+      state.bankRate += 1;
+      shopMessage("");
+      saveState();
+      updateAll();
+    },
+    "이자율 업그레이드"
+  );
+});
+
 /* =========================
    은행
 ========================= */
@@ -1269,40 +1272,12 @@ function bankRateUpgradeCost() {
 }
 
 function updateBank() {
-  $("bankRateDisplay").textContent = `${state.bankRate}%`;
-
-  $("bankRateDescription").textContent =
-    `분당 ${state.bankRate}% 단리입니다. 앱이 활성화된 시간만 계산하며, 1분이 지날 때 이자가 반영됩니다.`;
-
-  const rateCost = bankRateUpgradeCost();
-
-  $("upgradeBankRateButton").disabled =
-    state.bankRate >= 10 ||
-    state.budget < rateCost;
-
-  $("upgradeBankRateButton").textContent =
-    state.bankRate >= 10 ? "최대 이자율" : "이자율 올리기";
-
-  $("bankUpgradeInfo").textContent =
-    state.bankRate >= 10
-      ? "최대 이자율에 도달했습니다."
-      : `다음 업그레이드: ${moneyText(rateCost)} (${state.bankRate}% → ${state.bankRate + 1}%)`;
-
-  $("bankPrincipalDisplay").textContent =
-    moneyText(state.bankPrincipal);
-
-  $("bankInterestDisplay").textContent =
-    moneyText(state.bankInterest);
-
-  $("bankTotalDisplay").textContent =
-    moneyText(addMoney(state.bankPrincipal, state.bankInterest));
-
-  const secondsLeft = Math.ceil(
-    Math.max(0, BANK_MINUTE_MS - state.bankElapsedMs) / 1000
-  );
-
-  $("bankNextInterestDisplay").textContent =
-    `다음 이자까지 ${clockText(secondsLeft)}`;
+  $("bankPrincipalDisplay").textContent = moneyText(state.bankPrincipal);
+  $("bankInterestDisplay").textContent = moneyText(state.bankInterest);
+  $("bankTotalDisplay").textContent = moneyText(addMoney(state.bankPrincipal, state.bankInterest));
+  const secondsLeft = Math.ceil(Math.max(0, BANK_MINUTE_MS - state.bankElapsedMs) / 1000);
+  $("bankNextInterestDisplay").textContent = `다음 이자까지 ${clockText(secondsLeft)}`;
+  $("bankRateDescription").textContent = `현재 이자율은 분당 ${state.bankRate}% 단리입니다. 앱이 활성화된 시간만 계산하며, 1분이 지날 때 이자가 반영됩니다.`;
 }
 
 document.addEventListener("visibilitychange", () => {
@@ -1336,28 +1311,6 @@ function setBankTab(tab) {
 
 $("bankTab").addEventListener("click", () => setBankTab("bank"));
 $("wageTab").addEventListener("click", () => setBankTab("wage"));
-
-$("upgradeBankRateButton").addEventListener("click", () => {
-  const cost = bankRateUpgradeCost();
-
-  if (state.bankRate >= 10 || state.budget < cost) return;
-
-  askConfirm(
-    `은행 이자율을 ${state.bankRate}%에서 ${state.bankRate + 1}%로 올립니다. 비용은 ${moneyText(cost)}입니다. 정말 구매하시겠습니까?`,
-    () => {
-      const actualCost = bankRateUpgradeCost();
-
-      if (state.bankRate >= 10 || state.budget < actualCost) return;
-
-      state.budget -= actualCost;
-      state.bankRate += 1;
-
-      saveState();
-      updateAll();
-    },
-    "이자율 업그레이드"
-  );
-});
 
 /* =========================
    입금 / 출금
