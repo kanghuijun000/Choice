@@ -1,8 +1,7 @@
-/* Supabase 프로젝트 설정
-   Supabase 대시보드 → Project Settings → API에서 Project URL과 publishable/anon key를 넣으세요.
-   이 파일에는 service_role/secret key를 절대 넣지 마세요.
+/* Supabase project settings.
+   Browser-safe publishable/anon key only. Never put a service_role/secret key here.
 */
 window.RISK_GAME_SUPABASE_CONFIG = {
-  url: "YOUR_SUPABASE_PROJECT_URL",
-  anonKey: "YOUR_SUPABASE_PUBLISHABLE_OR_ANON_KEY"
+  url: "https://jlomubvouqehbxcdbhit.supabase.co",
+  anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impsb211YnZvdXFlaGJ4Y2RiaGl0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1OTA5NzUsImV4cCI6MjEwNzE2Njk3NX0.ry8xHfrDUZxKzQSJ3JuMRZRknispoGnTHer0s--G-k"
 };
