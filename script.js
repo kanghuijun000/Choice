@@ -1391,7 +1391,7 @@ function updateBank() {
   $("bankTotalDisplay").textContent = moneyText(addMoney(state.bankPrincipal, state.bankInterest));
   const secondsLeft = Math.ceil(Math.max(0, BANK_MINUTE_MS - state.bankElapsedMs) / 1000);
   $("bankNextInterestDisplay").textContent = `다음 이자까지 ${clockText(secondsLeft)}`;
-  $("bankRateDescription").textContent = `현재 이자율은 분당 ${state.bankRate}% 단리입니다. 앱이 활성화된 시간만 계산하며, 1분이 지날 때 이자가 반영됩니다.`;
+  $("bankRateDescription").textContent = `현재 이자율은 분당 ${state.bankRate}% 단리입니다. 앱이 활성화된 시간만 계산하며, 1분이 지날 때 이자가 반영됩니다. 원금이 너무 적으면 계산된 이자가 1원 미만으로 처리되어 표시되지 않을 수 있습니다.`;
 }
 
 document.addEventListener("visibilitychange", () => {
