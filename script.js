@@ -752,7 +752,11 @@ $("saveProfileButton").addEventListener("click", () => {
   window.dispatchEvent(new CustomEvent("risk-game-profile-updated", {
     detail: { name: profile.name, code: profile.code }
   }));
+  const wasInitialSetup = $("profileModal").dataset.initialSetup === "true";
   $("profileModal").classList.add("hidden");
+  if (wasInitialSetup) {
+    window.dispatchEvent(new Event("risk-game-initial-profile-created"));
+  }
 });
 
 $("cancelProfileButton").addEventListener("click", closeProfileEditor);
