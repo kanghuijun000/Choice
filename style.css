@@ -321,9 +321,9 @@ input::-webkit-inner-spin-button, input::-webkit-outer-spin-button {
 }
 
 .danger {
-  background: #522131;
-  border: 1px solid #7d3146;
-  color: #ffb9c4;
+  background: #7c2638;
+  border: 1px solid #b34258;
+  color: #fff;
 }
 
 .error-message {
@@ -398,6 +398,26 @@ input::-webkit-inner-spin-button, input::-webkit-outer-spin-button {
 .choice-card.red {
   background: linear-gradient(155deg, #d8465c, #632237);
   border-color: #ef6378;
+}
+
+.choice-card.green {
+  background: linear-gradient(155deg, #219b70, #124b3d);
+  border-color: #4bd6a3;
+}
+
+.choice-grid.three-choice {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.choice-grid.three-choice .choice-card {
+  min-height: 190px;
+  padding: 14px 7px;
+  gap: 9px;
+}
+
+.choice-grid.three-choice .choice-effect {
+  font-size: clamp(20px, 5vw, 29px);
 }
 
 .choice-color {
@@ -583,10 +603,13 @@ input::-webkit-inner-spin-button, input::-webkit-outer-spin-button {
 }
 
 .two-buttons {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
   gap: 10px;
   margin-top: 12px;
+}
+
+.two-buttons > button {
+  flex: 1;
 }
 
 .wage-panel {
@@ -618,7 +641,7 @@ input::-webkit-inner-spin-button, input::-webkit-outer-spin-button {
   text-align: center;
 }
 
-/* 은행 화면만 상단 여백 축소 */
+/* 은행 화면 여백 조정 */
 #moneyScreen {
   padding-top: 5px;
   padding-bottom: 8px;
@@ -725,5 +748,96 @@ input::-webkit-inner-spin-button, input::-webkit-outer-spin-button {
   *, *::before, *::after {
     animation-duration: .01ms !important;
     transition-duration: .01ms !important;
+  }
+}
+
+/* 추가 기능 UI */
+.mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 14px;
+  padding: 13px 14px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--surface);
+  color: #e8efff;
+  font-size: 14px;
+}
+
+.mode-toggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: #4d8dff;
+}
+
+.bank-upgrade-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.bank-upgrade-row span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.bank-upgrade-row strong {
+  color: #eaf1ff;
+}
+
+.bank-upgrade-row button {
+  padding: 10px 12px;
+  font-size: 12px;
+}
+
+.buy-button:disabled {
+  background: #202838;
+  border-color: #353e4e;
+  color: #778196;
+  opacity: .8;
+}
+
+.buy-button:disabled small {
+  color: #8993a7;
+}
+
+.buy-button:not(:disabled) {
+  cursor: pointer;
+}
+
+.ready-dot {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  top: 9px;
+  right: 10px;
+  border-radius: 50%;
+  background: #ff5368;
+  box-shadow: 0 0 0 3px rgba(255,83,104,.15);
+}
+
+.money-menu-button {
+  position: relative;
+}
+
+#resetGameButton {
+  margin-top: 16px;
+}
+
+@media (max-width: 390px) {
+  .choice-grid.three-choice {
+    gap: 6px;
+  }
+
+  .choice-grid.three-choice .choice-card {
+    min-height: 180px;
+    padding: 10px 5px;
+  }
+
+  .choice-grid.three-choice .choice-penalty {
+    font-size: 10px;
   }
 }
