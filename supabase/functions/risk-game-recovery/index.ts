@@ -162,8 +162,21 @@ Deno.serve(async (req) => {
     const deviceId = body.deviceId;
     if (!validDeviceId(deviceId)) return reply({ error: "기기 식별 정보를 확인할 수 없습니다." }, 400);
 
-    // 기존 계정에 아직 기기 기록이 없으면 최초 실행 기기를 등록하되,
-    // 다른 기기가 이미 등록한 기록은 절대 덮어쓰지 않습니다.
+    // 먼저 기존 기기 기록을 읽습니다. 이미 기록이 있으면 절대 덮어쓰지 않습니다.
+    const { data: existingSession, error: sessionReadError } = await service
+      .from("risk_game_device_sessions")
+      .select("device_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (sessionReadError) {
+      return reply({ error: "기기 연결 상태를 확인하지 못했습니다." }, 500);
+    }
+    if (existingSession) {
+      return reply({ active: existingSession.device_id === deviceId });
+    }
+
+    // 기록이 없는 구형 계정만 최초 기기를 등록합니다. 동시에 다른 기기가 등록했으면
+    // unique key 충돌을 허용하고, 실제 저장된 기기를 다시 확인합니다.
     const { error: insertError } = await service.from("risk_game_device_sessions")
       .insert({ user_id: user.id, device_id: deviceId, updated_at: new Date().toISOString() });
     if (insertError && insertError.code !== "23505") {
