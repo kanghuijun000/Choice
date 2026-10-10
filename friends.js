@@ -17,6 +17,7 @@
   let client = null;
   let currentUser = null;
   let busy = false;
+  let syncedUserId = null;
 
   function setMessage(message, isError = false) {
     const el = $("friendMessage");
@@ -25,16 +26,9 @@
     el.classList.toggle("friend-error", Boolean(isError));
   }
 
-  function setAuthMessage(message, isError = false) {
-    const el = $("friendAuthMessage");
-    if (!el) return;
-    el.textContent = message || "";
-    el.classList.toggle("friend-error", Boolean(isError));
-  }
-
   function setBusy(value) {
     busy = value;
-    ["friendSignUpButton", "friendSignInButton", "friendSignOutButton", "addFriendButton"]
+    ["addFriendButton"]
       .forEach(id => {
         const button = $(id);
         if (button) button.disabled = value;
@@ -70,22 +64,34 @@
   }
 
   function updateAccountUi() {
-    const signedIn = Boolean(currentUser);
-    $("friendAuthPanel").classList.toggle("hidden", signedIn);
-    $("friendSignedInPanel").classList.toggle("hidden", !signedIn);
-    $("friendAccountEmail").textContent = currentUser?.email || "";
-    $("friendCloudStatus").textContent = !configured
-      ? "Supabase 설정이 필요합니다."
-      : signedIn
-        ? "온라인 계정 연결됨 · 친구 목록 동기화 사용 가능"
-        : "로그인하면 친구 목록을 다른 기기와 동기화할 수 있습니다.";
-    $("friendAccountSummary").textContent = signedIn
-      ? "계정 연결됨"
-      : "로그인 필요";
+    const connected = Boolean(currentUser);
+    const status = $("friendCloudStatus");
+    if (status) {
+      status.textContent = !configured
+        ? "온라인 연결 설정을 확인해야 합니다."
+        : connected
+          ? "온라인 연결됨 · 이름과 고유 코드는 유지됩니다."
+          : "온라인 친구 기능 연결 중...";
+    }
+    const summary = $("friendAccountSummary");
+    if (summary) summary.textContent = connected ? "온라인" : "연결 중";
   }
 
   async function fetchMyProfile() {
     if (!client || !currentUser) return null;
+
+    // 첫 연결 때 이 기기에 이미 발급된 4자리 코드를 서버 프로필에 우선 적용합니다.
+    // 코드가 다른 사용자에게 이미 사용 중이면 서버에서 발급한 코드를 유지합니다.
+    if (syncedUserId !== currentUser.id) {
+      const local = localProfile();
+      const { error: syncError } = await client.rpc("sync_risk_game_profile", {
+        p_name: String(local.name || "플레이어").trim().slice(0, 20) || "플레이어",
+        p_code: String(local.code || "")
+      });
+      if (syncError) throw syncError;
+      syncedUserId = currentUser.id;
+    }
+
     const { data, error } = await client
       .from("profiles")
       .select("id, display_name, friend_code")
@@ -161,7 +167,7 @@
     if (!client || !currentUser) {
       const empty = document.createElement("p");
       empty.className = "muted friend-empty";
-      empty.textContent = "로그인하면 받은 친구 요청을 확인할 수 있습니다.";
+      empty.textContent = "온라인 연결 후 받은 친구 요청을 확인할 수 있습니다.";
       list.append(empty);
       return;
     }
@@ -189,7 +195,7 @@
     if (!client || !currentUser) {
       const empty = document.createElement("p");
       empty.className = "muted friend-empty";
-      empty.textContent = "로그인하면 친구 목록을 불러올 수 있습니다.";
+      empty.textContent = "온라인 연결 후 친구 목록을 불러올 수 있습니다.";
       list.append(empty);
       return;
     }
@@ -254,86 +260,15 @@
     }
   }
 
-  async function signUp() {
-    if (busy) return;
-    if (!client) return setAuthMessage("먼저 Supabase 설정 파일을 완성해야 합니다.", true);
-    const email = $("friendEmail").value.trim();
-    const password = $("friendPassword").value;
-    const name = localProfile().name.trim().slice(0, 20) || "플레이어";
-    if (!email || !password) return setAuthMessage("이메일과 비밀번호를 입력하세요.", true);
-    if (password.length < 8) return setAuthMessage("비밀번호는 8자 이상으로 입력하세요.", true);
-
-    setBusy(true);
-    setAuthMessage("");
-    try {
-      const { data, error } = await client.auth.signUp({
-        email,
-        password,
-        options: { data: { display_name: name } }
-      });
-      if (error) throw error;
-      if (data.session) {
-        await handleAuthState(data.session);
-        setAuthMessage("계정이 만들어졌습니다. 친구 코드를 확인하세요.");
-      } else {
-        setAuthMessage("가입 요청이 완료되었습니다. 이메일 인증이 켜져 있다면 인증 후 로그인하세요.");
-      }
-    } catch (error) {
-      setAuthMessage(error.message || "가입에 실패했습니다.", true);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function signIn() {
-    if (busy) return;
-    if (!client) return setAuthMessage("먼저 Supabase 설정 파일을 완성해야 합니다.", true);
-    const email = $("friendEmail").value.trim();
-    const password = $("friendPassword").value;
-    if (!email || !password) return setAuthMessage("이메일과 비밀번호를 입력하세요.", true);
-
-    setBusy(true);
-    setAuthMessage("");
-    try {
-      const { data, error } = await client.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-      await handleAuthState(data.session);
-      setAuthMessage("로그인했습니다. 친구 목록이 동기화되었습니다.");
-    } catch (error) {
-      setAuthMessage(error.message || "로그인에 실패했습니다.", true);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function signOut() {
-    if (busy || !client) return;
-    setBusy(true);
-    try {
-      const { error } = await client.auth.signOut();
-      if (error) throw error;
-      currentUser = null;
-      updateAccountUi();
-      await loadFriends();
-      await loadRequests();
-      setMessage("로그아웃했습니다. 이 기기의 게임 진행 데이터는 그대로 유지됩니다.");
-    } catch (error) {
-      setMessage(error.message || "로그아웃에 실패했습니다.", true);
-    } finally {
-      setBusy(false);
-    }
-  }
-
   async function addFriend() {
     if (busy) return;
     if (!client || !currentUser) {
       return setMessage("친구 요청을 보내려면 먼저 온라인 계정으로 로그인하세요.", true);
     }
-    const input = $("friendCodeInput").value.trim();
-    const match = input.match(/^(.+)#(\d{4})$/);
-    if (!match) return setMessage("이름#4자리코드 형식으로 입력하세요. 예: 이름#0123", true);
-    const name = match[1].trim();
-    const code = match[2];
+    const name = $("friendNameInput").value.trim();
+    const code = $("friendCodeOnlyInput").value.trim();
+    if (!name) return setMessage("친구 이름을 입력하세요.", true);
+    if (!/^\d{4}$/.test(code)) return setMessage("고유 코드는 숫자 4자리로 입력하세요.", true);
     if (!name || name.length > 20) return setMessage("이름을 확인하세요.", true);
 
     setBusy(true);
@@ -376,7 +311,8 @@
         return setMessage("이미 보낸 친구 요청이 아직 처리되지 않았습니다.", true);
       }
       if (insertError) throw insertError;
-      $("friendCodeInput").value = "";
+      $("friendNameInput").value = "";
+      $("friendCodeOnlyInput").value = "";
       setMessage(target.display_name + " 님에게 친구 요청을 보냈습니다. 상대방이 수락하면 서로 친구가 됩니다.");
     } catch (error) {
       console.error(error);
@@ -443,26 +379,26 @@
 
   function init() {
     if (configured && window.supabase?.createClient) {
-      client = window.supabase.createClient(config.url, config.anonKey);
+      client = window.supabase.createClient(config.url, config.anonKey, {
+        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
+      });
     }
 
-    $("friendSignUpButton").addEventListener("click", signUp);
-    $("friendSignInButton").addEventListener("click", signIn);
-    $("friendSignOutButton").addEventListener("click", signOut);
     $("addFriendButton").addEventListener("click", addFriend);
-    $("friendCodeInput").addEventListener("keydown", event => {
-      if (event.key === "Enter") addFriend();
+    $("friendNameInput").addEventListener("keydown", event => {
+      if (event.key === "Enter") $("friendCodeOnlyInput").focus();
     });
-    $("friendPassword").addEventListener("keydown", event => {
-      if (event.key === "Enter") signIn();
+    $("friendCodeOnlyInput").addEventListener("keydown", event => {
+      if (event.key === "Enter") addFriend();
     });
 
     $("friendMenuButton").addEventListener("click", async () => {
       setMessage("");
       if (!configured) {
-        setMessage("supabase-config.js에 프로젝트 URL과 공개용 키를 설정한 뒤 SQL 설정 파일을 실행하세요.", true);
+        setMessage("온라인 연결 설정을 확인해야 합니다.", true);
+      } else if (currentUser) {
+        await refreshCloudData();
       }
-      if (currentUser) await refreshCloudData();
     });
 
     window.addEventListener("risk-game-profile-updated", event => {
@@ -478,25 +414,50 @@
     }, 15000);
 
     if (!configured) {
-      setAuthMessage("Supabase 연결 전입니다. 설정 파일과 데이터베이스 SQL을 먼저 준비하세요.", true);
-      $("friendMyCode").textContent = "온라인 계정 연결 전";
-    } else if (!window.supabase?.createClient) {
-      setAuthMessage("Supabase 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인하세요.", true);
-    } else {
-      client.auth.getSession()
-        .then(({ data, error }) => {
-          if (error) throw error;
-          return handleAuthState(data.session);
-        })
-        .catch(error => setAuthMessage(error.message || "로그인 상태 확인 실패", true));
-
-      client.auth.onAuthStateChange((_event, session) => {
-        currentUser = session?.user || null;
-        updateAccountUi();
-        if (currentUser) setTimeout(() => refreshCloudData(), 0);
-        else { loadFriends(); loadRequests(); }
-      });
+      $("friendMyCode").textContent = "연결 설정 확인 필요";
+      setMessage("온라인 친구 기능의 Supabase 설정을 확인해야 합니다.", true);
+      return;
     }
+    if (!window.supabase?.createClient) {
+      setMessage("Supabase 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인하세요.", true);
+      return;
+    }
+
+    client.auth.onAuthStateChange((_event, session) => {
+      currentUser = session?.user || null;
+      updateAccountUi();
+    });
+
+    (async () => {
+      const { data, error } = await client.auth.getSession();
+      if (error) throw error;
+      if (data.session) {
+        currentUser = data.session.user;
+      } else {
+        // 사용자가 이메일/비밀번호를 입력하지 않아도 기기별 익명 계정을 자동 생성합니다.
+        const local = localProfile();
+        const { data: anonymousData, error: anonymousError } = await client.auth.signInAnonymously({
+          options: { data: { display_name: String(local.name || "플레이어").trim().slice(0, 20) || "플레이어" } }
+        });
+        if (anonymousError) throw anonymousError;
+        currentUser = anonymousData.user;
+      }
+      updateAccountUi();
+      await refreshCloudData();
+    })().catch(error => {
+      console.error("온라인 친구 기능 연결 실패:", error);
+      const message = String(error?.message || "");
+      if (/anonymous|disabled/i.test(message)) {
+        setMessage("Supabase 설정에서 익명 로그인을 한 번 켜야 합니다. 설정 후 새로고침하면 자동으로 연결됩니다.", true);
+      } else if (/sync_risk_game_profile|function .* does not exist|schema cache/i.test(message)) {
+        setMessage("친구 기능 업데이트를 위한 SQL 설정을 한 번 더 실행해야 합니다.", true);
+      } else {
+        setMessage("온라인 연결 실패: " + (message || "잠시 후 다시 시도하세요."), true);
+      }
+      updateAccountUi();
+      loadFriends().catch(() => {});
+      loadRequests().catch(() => {});
+    });
   }
 
   document.addEventListener("DOMContentLoaded", init);
