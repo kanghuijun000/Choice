@@ -8,6 +8,46 @@
   let restoreInProgress = false;
 
   const RECOVERY_ENABLED_KEY = "risk-game-recovery-enabled-v1";
+  const DEVICE_ID_KEY = "risk-game-device-id-v1";
+  const DISPLACED_KEY = "risk-game-account-displaced-v1";
+  let deviceVerified = false;
+  let displacementHandled = false;
+
+  function getDeviceId() {
+    let id = localStorage.getItem(DEVICE_ID_KEY);
+    if (!id) {
+      id = crypto.randomUUID();
+      localStorage.setItem(DEVICE_ID_KEY, id);
+    }
+    return id;
+  }
+
+  function handleDeviceDisplaced() {
+    if (displacementHandled) return;
+    displacementHandled = true;
+    deviceVerified = false;
+    if (saveTimer !== null) {
+      clearTimeout(saveTimer);
+      saveTimer = null;
+    }
+    localStorage.removeItem(RECOVERY_ENABLED_KEY);
+    localStorage.setItem(DISPLACED_KEY, "true");
+    client?.auth.signOut().catch(() => {});
+    window.dispatchEvent(new Event("risk-game-account-displaced"));
+  }
+
+  async function verifyDeviceSession() {
+    if (!client || localStorage.getItem(RECOVERY_ENABLED_KEY) !== "true") return false;
+    await client.auth.getSession();
+    const result = await invoke("check_device", { deviceId: getDeviceId() });
+    if (result.active !== true) {
+      handleDeviceDisplaced();
+      return false;
+    }
+    deviceVerified = true;
+    displacementHandled = false;
+    return true;
+  }
 
   function message(id, text, isError = false) {
     const el = $(id);
@@ -60,8 +100,12 @@
     setBusy(["saveRecoverySetupButton", "skipRecoverySetupButton"], true);
     message("setupRecoveryMessage", "복구 비밀번호를 안전하게 등록하고 있습니다.");
     try {
-      await invoke("register", { password });
+      const deviceId = getDeviceId();
+      await invoke("claim_device", { deviceId });
+      await invoke("register", { password, deviceId });
+      localStorage.removeItem(DISPLACED_KEY);
       localStorage.setItem(RECOVERY_ENABLED_KEY, "true");
+      deviceVerified = true;
       $("recoverySetupModal").classList.add("hidden");
       const entryPanel = $("recoverySetupEntryPanel");
       if (entryPanel) entryPanel.classList.add("hidden");
@@ -96,7 +140,8 @@
     setBusy(["changeRecoveryPasswordButton"], true);
     message("changeRecoveryMessage", "비밀번호를 변경하고 있습니다.");
     try {
-      await invoke("change", { oldPassword, password });
+      const deviceId = getDeviceId();
+      await invoke("change", { oldPassword, password, deviceId });
       localStorage.setItem(RECOVERY_ENABLED_KEY, "true");
       $("recoveryOldPassword").value = "";
       $("recoveryNewPassword").value = "";
@@ -119,7 +164,7 @@
 
     restoreInProgress = true;
     setBusy(["restoreRecoveryAccountButton"], true);
-    message("restoreRecoveryMessage", "계정을 확인하고 있습니다. 기존 기기의 데이터는 삭제하지 않습니다.");
+    message("restoreRecoveryMessage", "계정을 확인하고 있습니다. 복구가 완료되면 기존 기기는 계정 선택 화면으로 돌아갑니다.");
     try {
       const found = await invoke("lookup", { password });
       if (!found.email) throw new Error("복구 비밀번호가 일치하는 계정을 찾지 못했습니다.");
@@ -131,8 +176,9 @@
       if (error) throw error;
       if (!data?.user || !data?.session) throw new Error("계정 로그인 응답을 확인할 수 없습니다.");
 
-      const result = await invoke("load_state");
-      localStorage.setItem(RECOVERY_ENABLED_KEY, "true");
+      const deviceId = getDeviceId();
+      await invoke("claim_device", { deviceId, password });
+      const result = await invoke("load_state", { deviceId });
       if (result.payload && typeof window.riskGameApplyCloudState === "function") {
         const applied = window.riskGameApplyCloudState(result.payload);
         if (!applied) throw new Error("계정은 연결됐지만 게임 데이터를 적용하지 못했습니다. 현재 기기 데이터는 그대로 남아 있습니다.");
@@ -143,6 +189,10 @@
         message("restoreRecoveryMessage", "계정은 복구했지만 서버에 저장된 게임 데이터가 없어 현재 기기의 게임 데이터는 유지했습니다.");
         await saveCloudState();
       }
+      localStorage.removeItem(DISPLACED_KEY);
+      localStorage.setItem(RECOVERY_ENABLED_KEY, "true");
+      deviceVerified = true;
+      displacementHandled = false;
       window.dispatchEvent(new Event("risk-game-account-restored"));
     } catch (error) {
       message("restoreRecoveryMessage", String(error?.message || "계정 복구에 실패했습니다."), true);
@@ -153,17 +203,17 @@
   }
 
   async function saveCloudState() {
-    if (!client || localStorage.getItem(RECOVERY_ENABLED_KEY) !== "true" ||
+    if (!client || !deviceVerified || localStorage.getItem(RECOVERY_ENABLED_KEY) !== "true" ||
         typeof window.riskGameGetState !== "function") return;
     try {
-      await invoke("save_state", { payload: window.riskGameGetState() });
+      await invoke("save_state", { payload: window.riskGameGetState(), deviceId: getDeviceId() });
     } catch (error) {
       console.error("게임 데이터 클라우드 저장 실패:", error);
     }
   }
 
   function scheduleCloudSave() {
-    if (restoreInProgress || localStorage.getItem(RECOVERY_ENABLED_KEY) !== "true") return;
+    if (restoreInProgress || !deviceVerified || localStorage.getItem(RECOVERY_ENABLED_KEY) !== "true") return;
     if (saveTimer !== null) clearTimeout(saveTimer);
     saveTimer = setTimeout(() => {
       saveTimer = null;
@@ -223,12 +273,22 @@
     window.addEventListener("risk-game-initial-profile-created", openInitialSetup);
     window.addEventListener("risk-game-state-updated", scheduleCloudSave);
     window.addEventListener("pagehide", saveCloudState);
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible") saveCloudState();
-    });
+    const recheckDeviceAndSync = async () => {
+      if (document.visibilityState === "hidden" ||
+          localStorage.getItem(RECOVERY_ENABLED_KEY) !== "true") return;
+      try {
+        if (await verifyDeviceSession()) await saveCloudState();
+      } catch (error) {
+        // 연결 오류만으로 계정 소유권을 바꾸거나 로컬 데이터를 지우지 않습니다.
+        console.warn("기기 연결 상태 확인 실패:", error);
+      }
+    };
+    document.addEventListener("visibilitychange", recheckDeviceAndSync);
+    window.addEventListener("pageshow", recheckDeviceAndSync);
+    window.addEventListener("focus", recheckDeviceAndSync);
 
     if (localStorage.getItem(RECOVERY_ENABLED_KEY) === "true") {
-      window.setTimeout(saveCloudState, 2500);
+      window.setTimeout(recheckDeviceAndSync, 100);
     }
   }
 
