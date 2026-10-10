@@ -190,10 +190,10 @@ const RISKY_CHOICES = [
   },
   {
     id: "risk200",
-    effect: 20,
-    title: "+20%",
-    penalty: "패널티: 33% 확률로 50% 손실",
-    penaltyChance: 33,
+    effect: 15,
+    title: "+15%",
+    penalty: "패널티: 26% 확률로 50% 손실",
+    penaltyChance: 26,
     penaltyType: "loss50"
   },
   {
