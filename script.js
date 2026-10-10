@@ -79,64 +79,64 @@ function clockText(seconds) {
 const SAFE_CHOICES = [
   {
     id: "safe10",
-    effect: 10,
-    title: "+10%",
-    penalty: "패널티: 5% 확률로 10% 손실",
-    penaltyChance: 5,
+    effect: 2,
+    title: "+2%",
+    penalty: "패널티: 8% 확률로 10% 손실",
+    penaltyChance: 8,
     penaltyType: "loss10"
   },
   {
     id: "safe15",
-    effect: 15,
-    title: "+15%",
-    penalty: "패널티: 8% 확률로 다음 턴 빨강 강제",
-    penaltyChance: 8,
+    effect: 3,
+    title: "+3%",
+    penalty: "패널티: 12% 확률로 다음 턴 빨강 강제",
+    penaltyChance: 12,
     penaltyType: "forceRed"
   },
   {
     id: "safe20",
-    effect: 20,
-    title: "+20%",
-    penalty: "패널티: 10% 확률로 10% 손실",
-    penaltyChance: 10,
+    effect: 4,
+    title: "+4%",
+    penalty: "패널티: 15% 확률로 10% 손실",
+    penaltyChance: 15,
     penaltyType: "loss10"
   },
   {
     id: "safe25",
-    effect: 25,
-    title: "+25%",
-    penalty: "패널티: 14% 확률로 25% 손실",
-    penaltyChance: 14,
+    effect: 5,
+    title: "+5%",
+    penalty: "패널티: 21% 확률로 25% 손실",
+    penaltyChance: 21,
     penaltyType: "loss25"
   },
   {
     id: "safeMinus10",
-    effect: -10,
-    title: "−10%",
-    penalty: "패널티: 8% 확률로 다음 턴 파랑 강제",
-    penaltyChance: 8,
+    effect: -2,
+    title: "−2%",
+    penalty: "패널티: 12% 확률로 다음 턴 파랑 강제",
+    penaltyChance: 12,
     penaltyType: "forceBlue"
   },
   {
     id: "safeNoPenalty",
-    effect: 20,
-    title: "+20%",
+    effect: 0,
+    title: "0%",
     penalty: "패널티: 없음",
     penaltyChance: 0,
     penaltyType: "none"
   },
   {
     id: "safeForceGreen",
-    effect: 30,
-    title: "+30%",
-    penalty: "패널티: 12% 확률로 다음 턴 초록 강제",
-    penaltyChance: 12,
+    effect: 1,
+    title: "+1%",
+    penalty: "패널티: 18% 확률로 다음 턴 초록 강제",
+    penaltyChance: 18,
     penaltyType: "forceGreen"
   },
   {
     id: "safeBonus5",
-    effect: 15,
-    title: "+15%",
+    effect: -2,
+    title: "−2%",
     penalty: "보너스: 다음 5턴 손실 패널티 확률 감소",
     penaltyChance: 0,
     penaltyType: "none",
@@ -145,8 +145,8 @@ const SAFE_CHOICES = [
   },
   {
     id: "safeBonus10",
-    effect: 10,
-    title: "+10%",
+    effect: -2,
+    title: "−2%",
     penalty: "보너스: 다음 10턴 안전한 양수 선택지 확률 증가",
     penaltyChance: 0,
     penaltyType: "none",
@@ -158,72 +158,72 @@ const SAFE_CHOICES = [
 const RISKY_CHOICES = [
   {
     id: "risk40",
-    effect: 40,
-    title: "+40%",
-    penalty: "패널티: 20% 확률로 25% 손실",
-    penaltyChance: 20,
-    penaltyType: "loss25"
-  },
-  {
-    id: "risk50",
-    effect: 50,
-    title: "+50%",
-    penalty: "패널티: 25% 확률로 25% 손실",
-    penaltyChance: 25,
-    penaltyType: "loss25"
-  },
-  {
-    id: "risk75",
-    effect: 75,
-    title: "+75%",
+    effect: 8,
+    title: "+8%",
     penalty: "패널티: 30% 확률로 25% 손실",
     penaltyChance: 30,
     penaltyType: "loss25"
   },
   {
-    id: "risk100",
-    effect: 100,
-    title: "+100%",
-    penalty: "패널티: 38% 확률로 50% 손실",
+    id: "risk50",
+    effect: 10,
+    title: "+10%",
+    penalty: "패널티: 38% 확률로 25% 손실",
     penaltyChance: 38,
+    penaltyType: "loss25"
+  },
+  {
+    id: "risk75",
+    effect: 14,
+    title: "+14%",
+    penalty: "패널티: 45% 확률로 25% 손실",
+    penaltyChance: 45,
+    penaltyType: "loss25"
+  },
+  {
+    id: "risk100",
+    effect: 19,
+    title: "+19%",
+    penalty: "패널티: 32% 확률로 50% 손실",
+    penaltyChance: 32,
     penaltyType: "loss50"
   },
   {
     id: "risk200",
-    effect: 200,
-    title: "+200%",
-    penalty: "패널티: 52% 확률로 50% 손실",
-    penaltyChance: 52,
+    effect: 38,
+    title: "+38%",
+    penalty: "패널티: 55% 확률로 50% 손실",
+    penaltyChance: 55,
     penaltyType: "loss50"
   },
   {
     id: "risk1000",
-    effect: 1000,
-    title: "+1000%",
-    penalty: "패널티: 80% 확률로 전액 손실",
-    penaltyChance: 80,
+    effect: 10,
+    title: "+10%",
+    penalty: "패널티: 9% 확률로 전액 손실",
+    penaltyChance: 9,
     penaltyType: "totalLoss"
   },
   {
     id: "riskMinus25",
-    effect: -25,
-    title: "−25%",
-    penalty: "패널티: 25% 확률로 25% 추가 손실",
-    penaltyChance: 25,
+    effect: 8,
+    title: "+8%",
+    penalty: "패널티: 30% 확률로 25% 손실",
+    penaltyChance: 30,
     penaltyType: "loss25"
   },
   {
     id: "riskMinus50",
-    effect: -50,
-    title: "−50%",
-    penalty: "패널티: 35% 확률로 50% 추가 손실",
-    penaltyChance: 35,
+    effect: 20,
+    title: "+20%",
+    penalty: "패널티: 33% 확률로 50% 손실",
+    penaltyChance: 33,
     penaltyType: "loss50"
   },
   {
     id: "riskMinus15Bonus",
-    effect: -15,
-    title: "−15%",
+    effect: -2,
+    title: "−2%",
     penalty: "보너스: 다음 5턴 손실 패널티 확률 감소",
     penaltyChance: 0,
     penaltyType: "none",
@@ -285,11 +285,11 @@ function estimateChoiceValue(choice) {
 
   // 보너스는 미래 선택지 구성에 좌우되므로 과대평가하지 않고 완만하게 반영합니다.
   if (choice.bonusType === "reduceLoss") {
-    multiplier += Math.min(10, choice.bonusTurns || 5) * 0.012;
+    multiplier += Math.min(10, choice.bonusTurns || 5) * 0.004;
   } else if (choice.bonusType === "safePositive") {
     // 10턴 동안 안전한 양수 선택지가 더 자주 등장하는 장기 효과를 반영합니다.
     // 낮게 평가하면 +10% 보상에 붙은 이 보너스가 위험 없는 정답처럼 취급될 수 있습니다.
-    multiplier += Math.min(10, choice.bonusTurns || 10) * 0.012;
+    multiplier += Math.min(10, choice.bonusTurns || 10) * 0.004;
   }
 
   return (multiplier - 1) * 100;
@@ -373,7 +373,7 @@ function generateChoices(previous = null, count = 2, safeBoost = false) {
         0
       ) *
       (safeBoost && item.choices.some(choice => choice.id === "safeNoPenalty")
-        ? 3
+        ? 1.5
         : 1)
   }));
   const totalWeight = weighted.reduce((sum, entry) => sum + entry.weight, 0);
@@ -901,7 +901,7 @@ function applyPenalty(choice, selectedColor) {
 
   const effectiveChance =
     isLossPenalty && game.reduceLossTurns > 0
-      ? choice.penaltyChance * 0.35
+      ? choice.penaltyChance * 0.7
       : choice.penaltyChance;
 
   if (Math.random() * 100 >= effectiveChance) {
