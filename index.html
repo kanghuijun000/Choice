@@ -314,36 +314,22 @@
       </div>
 
       <div class="panel friend-account-panel">
-        <p class="eyebrow">ONLINE ACCOUNT</p>
-        <h3>온라인 계정</h3>
-        <p id="friendCloudStatus" class="muted">로그인하면 친구 목록을 다른 기기와 동기화할 수 있습니다.</p>
-        <div id="friendAuthPanel">
-          <label for="friendEmail">이메일</label>
-          <input id="friendEmail" type="email" autocomplete="email" placeholder="이메일 주소">
-          <label for="friendPassword">비밀번호</label>
-          <input id="friendPassword" type="password" autocomplete="current-password" minlength="8" placeholder="8자 이상">
-          <div class="two-buttons friend-auth-buttons">
-            <button id="friendSignInButton" class="primary">로그인</button>
-            <button id="friendSignUpButton" class="secondary">계정 만들기</button>
-          </div>
-          <p id="friendAuthMessage" class="friend-message" role="status"></p>
-        </div>
-        <div id="friendSignedInPanel" class="hidden">
+        <p class="eyebrow">PLAYER PROFILE</p>
+        <h3>내 계정</h3>
+        <p id="friendCloudStatus" class="muted">온라인 친구 기능 연결 중...</p>
+        <div id="friendSignedInPanel">
           <div class="profile-detail-row">
-            <span>로그인 계정</span>
-            <strong id="friendAccountEmail"></strong>
-          </div>
-          <div class="profile-detail-row">
-            <span>내 친구 코드</span>
+            <span>내 이름과 고유 코드</span>
             <strong id="friendMyCode">불러오는 중...</strong>
           </div>
-          <button id="friendSignOutButton" class="wide-button secondary">로그아웃</button>
         </div>
       </div>
 
       <div class="panel friend-add-panel">
-        <label for="friendCodeInput">친구 코드 (이름#4자리)</label>
-        <input id="friendCodeInput" type="text" maxlength="25" autocomplete="off" placeholder="예: 플레이어#0123">
+        <label for="friendNameInput">친구 이름</label>
+        <input id="friendNameInput" type="text" maxlength="20" autocomplete="off" placeholder="친구 이름">
+        <label for="friendCodeOnlyInput">친구 고유 코드 (숫자 4자리)</label>
+        <input id="friendCodeOnlyInput" type="text" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="예: 0123">
         <button id="addFriendButton" class="wide-button primary">친구 추가</button>
         <p id="friendMessage" class="friend-message" role="status"></p>
       </div>
@@ -354,17 +340,17 @@
           <span class="muted">수락해야 친구가 됩니다</span>
         </div>
         <div id="friendRequests" class="friend-list">
-          <p class="muted friend-empty">로그인하면 받은 친구 요청을 확인할 수 있습니다.</p>
+          <p class="muted friend-empty">온라인 연결 후 받은 친구 요청을 확인할 수 있습니다.</p>
         </div>
       </div>
 
       <div class="friend-list-section">
         <div class="friend-list-heading">
           <h3>친구 목록</h3>
-          <span id="friendAccountSummary" class="muted">로그인 필요</span>
+          <span id="friendAccountSummary" class="muted">연결 중</span>
         </div>
         <div id="friendList" class="friend-list">
-          <p class="muted friend-empty">로그인하면 친구 목록을 불러올 수 있습니다.</p>
+          <p class="muted friend-empty">온라인 연결 후 친구 목록을 불러올 수 있습니다.</p>
         </div>
       </div>
       <p class="muted friend-data-note">친구 목록은 온라인 계정에 저장됩니다. 게임 예산, 업그레이드, 은행 및 진행 상황은 기존처럼 각 기기에 따로 저장되며 변경되지 않습니다.</p>
@@ -415,6 +401,6 @@
 <script src="./script.js?v=15" defer></script>
 <script src="./supabase-config.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-<script src="./friends.js?v=2" defer></script>
+<script src="./friends.js?v=3" defer></script>
 </body>
 </html>
