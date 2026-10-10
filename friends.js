@@ -52,20 +52,16 @@
 
   function saveCloudProfileLocally(profile) {
     try {
-      const current = localProfile();
-      localStorage.setItem("risk-game-profile-v1", JSON.stringify({
-        name: profile.display_name,
-        code: profile.friend_code
-      }));
-      const name = $("homeProfileName");
-      const code = $("homeProfileCode");
-      const settingsName = $("profileDisplayName");
-      const settingsCode = $("profileDisplayCode");
-      if (name) name.textContent = profile.display_name;
-      if (code) code.textContent = "#" + profile.friend_code;
-      if (settingsName) settingsName.textContent = profile.display_name;
-      if (settingsCode) settingsCode.textContent = "#" + profile.friend_code;
-      return current;
+      if (typeof window.riskGameApplyCloudProfile === "function") {
+        window.riskGameApplyCloudProfile(profile);
+      } else {
+        localStorage.setItem("risk-game-profile-v1", JSON.stringify({
+          name: profile.display_name,
+          code: profile.friend_code
+        }));
+      }
+      $("friendMyCode").textContent = profile.display_name + "#" + profile.friend_code;
+      return true;
     } catch (error) {
       console.error("프로필 표시 동기화 실패:", error);
       return null;
