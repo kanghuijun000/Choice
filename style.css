@@ -1177,3 +1177,21 @@ input::-webkit-inner-spin-button, input::-webkit-outer-spin-button {
 }
 .recovery-message.recovery-error { color: #ff7287; }
 #recoverySetupModal .modal-card { max-height: 90dvh; overflow-y: auto; }
+
+
+/* 최초 계정 선택 및 기존 계정 복구 화면 */
+.account-entry-screen { min-height: calc(100dvh - 105px); display: flex; flex-direction: column; justify-content: center; padding-top: 28px; padding-bottom: 28px; }
+.account-entry-hero { padding: 18px 4px 30px; text-align: center; }
+.account-entry-icon { width: 86px; height: 86px; display: grid; place-items: center; margin: 20px auto; border: 1px solid #344a70; border-radius: 26px; background: linear-gradient(145deg, #203a67, #151d30); font-size: 42px; box-shadow: 0 12px 36px rgba(0,0,0,.22); }
+.account-entry-hero h2 { margin: 0; font-size: clamp(25px, 7vw, 32px); letter-spacing: -.6px; }
+.account-entry-hero > p:last-child { margin: 10px 0 0; color: var(--muted); font-size: 13px; }
+.account-entry-actions { display: grid; gap: 12px; }
+.account-entry-button { width: 100%; min-height: 82px; padding: 15px; display: flex; align-items: center; gap: 13px; border: 1px solid var(--border); border-radius: 17px; background: var(--surface); text-align: left; }
+.account-entry-button.primary { border-color: #4388f5; background: linear-gradient(135deg, #245ed2, #3c8aff); }
+.account-entry-button-icon { width: 44px; height: 44px; flex: 0 0 44px; display: grid; place-items: center; border-radius: 13px; background: rgba(4,12,28,.22); font-size: 22px; }
+.account-entry-button > span:nth-child(2) { flex: 1; min-width: 0; }
+.account-entry-button strong, .account-entry-button small { display: block; }
+.account-entry-button strong { font-size: 16px; }
+.account-entry-button small { margin-top: 4px; color: rgba(240,246,255,.78); font-size: 12px; }
+.account-entry-arrow { font-size: 27px; opacity: .8; }
+.account-entry-note { margin: 18px 4px 0; color: var(--muted); font-size: 11px; line-height: 1.6; text-align: center; }
