@@ -9,7 +9,7 @@
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./icon.svg">
   <link rel="manifest" href="./manifest.json">
-  <link rel="stylesheet" href="./style.css?v=15">
+  <link rel="stylesheet" href="./style.css?v=16">
 </head>
 <body>
 <div class="app">
@@ -312,7 +312,7 @@
           <span class="settings-category-icon">🎨</span><span><strong>컨트롤 및 배경</strong><small>배경색과 진동 설정</small></span><span class="settings-category-arrow">›</span>
         </button>
         <button class="settings-category-button" type="button" role="tab" aria-selected="false" data-settings-category="reset">
-          <span class="settings-category-icon">♻️</span><span><strong>초기화</strong><small>게임 진행 데이터 초기화</small></span><span class="settings-category-arrow">›</span>
+          <span class="settings-category-icon">♻️</span><span><strong>초기화 및 계정 삭제</strong><small>게임 초기화와 계정 영구 삭제</small></span><span class="settings-category-arrow">›</span>
         </button>
       </div>
 
@@ -384,6 +384,14 @@
           <p>예산, 게임 한도, 리롤, 은행 원금과 이자, 이자율, 시급 대기 시간, 해금 항목, 게임 기록과 진행 중인 게임을 초기 상태로 되돌립니다.</p>
           <p class="muted">초기화하면 배경색과 진동 설정도 기본값으로 돌아갑니다. 계정 이름과 고유 코드는 유지됩니다. 이 작업은 되돌릴 수 없습니다.</p>
           <button id="resetGameButton" class="wide-button danger">게임 데이터 전체 초기화</button>
+        </div>
+        <div class="panel reset-settings-panel account-delete-panel">
+          <p class="eyebrow">PERMANENT ACCOUNT DELETION</p>
+          <h3>계정 영구 삭제</h3>
+          <p>계정, 설정한 복구 비밀번호, 고유 코드, 클라우드 게임 데이터와 친구 관계를 영구적으로 삭제합니다. 삭제 후에는 같은 계정을 복구할 수 없습니다.</p>
+          <p class="muted">삭제가 완료되면 검은 화면이 표시됩니다. 앱을 완전히 종료한 뒤 다시 실행하면 신규/기존 계정 선택 화면이 나타납니다.</p>
+          <button id="deleteAccountButton" class="wide-button danger" type="button">계정 영구 삭제</button>
+          <p id="deleteAccountMessage" class="settings-feedback" role="status"></p>
         </div>
       </div>
     </section>
@@ -547,10 +555,16 @@
   </div>
 </div>
 <div id="purchaseNotice" class="purchase-notice" role="status" aria-live="polite"></div>
-<script src="./script.js?v=30" defer></script>
+<div id="accountDeletedScreen" class="account-deleted-screen hidden" role="status" aria-live="polite">
+  <div>
+    <p class="account-deleted-title">계정이 영구적으로 삭제되었습니다.</p>
+    <p>앱을 완전히 종료한 뒤 다시 실행해 주세요.</p>
+  </div>
+</div>
+<script src="./script.js?v=31" defer></script>
 <script src="./supabase-config.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-<script src="./friends.js?v=17" defer></script>
-<script src="./recovery.js?v=5" defer></script>
+<script src="./friends.js?v=18" defer></script>
+<script src="./recovery.js?v=6" defer></script>
 </body>
 </html>
