@@ -127,3 +127,37 @@ $remove$;
 
 revoke all on function public.remove_risk_game_friend(uuid) from public, anon;
 grant execute on function public.remove_risk_game_friend(uuid) to authenticated;
+
+
+-- 친구 목록에 표시할 예산 및 앱 사용 상태
+alter table public.profiles
+  add column if not exists current_budget bigint not null default 0,
+  add column if not exists last_seen_at timestamptz;
+
+-- 사용자는 자신의 예산/접속 시각만 갱신할 수 있습니다.
+create or replace function public.sync_risk_game_presence(p_budget bigint)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $presence$
+declare
+  current_id uuid := auth.uid();
+begin
+  if current_id is null then
+    raise exception '온라인 계정 연결이 필요합니다.';
+  end if;
+
+  update public.profiles
+    set current_budget = greatest(0, least(coalesce(p_budget, 0), 9000000000000000)),
+        last_seen_at = pg_catalog.now()
+    where id = current_id;
+
+  if not found then
+    raise exception '계정 프로필이 없습니다. 페이지를 새로고침해 다시 시도하세요.';
+  end if;
+end;
+$presence$;
+
+revoke all on function public.sync_risk_game_presence(bigint) from public, anon;
+grant execute on function public.sync_risk_game_presence(bigint) to authenticated;
