@@ -1,6 +1,7 @@
 "use strict";
 
 const STORAGE_KEY = "risk-game-state-v6";
+const PROFILE_STORAGE_KEY = "risk-game-profile-v1";
 const LEGACY_KEYS = [
   "risk-game-state-v5",
   "risk-game-state-v4",
@@ -591,6 +592,39 @@ function loadState() {
   return defaultState();
 }
 
+function loadProfile() {
+  try {
+    const raw = localStorage.getItem(PROFILE_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+    const name = String(parsed.name || "").trim();
+    const code = String(parsed.code || "");
+    if (!name || !/^\d{3}$/.test(code)) return null;
+    return { name: name.slice(0, 20), code };
+  } catch {
+    return null;
+  }
+}
+
+function saveProfile() {
+  try {
+    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
+    return true;
+  } catch (error) {
+    console.error("계정 정보 저장 실패:", error);
+    return false;
+  }
+}
+
+function createProfile(name) {
+  return {
+    name,
+    code: String(Math.floor(Math.random() * 1000)).padStart(3, "0")
+  };
+}
+
+let profile = loadProfile();
 let state = loadState();
 let currentScreen = "homeScreen";
 let currentBankTab = "bank";
@@ -621,6 +655,68 @@ function scheduleSave() {
     saveState();
   }, 100);
 }
+
+function renderProfile() {
+  if (!profile) return;
+  const displayName = profile.name;
+  const displayCode = "#" + profile.code;
+  $("homeProfileName").textContent = displayName;
+  $("homeProfileCode").textContent = displayCode;
+  $("profileDisplayName").textContent = displayName;
+  $("profileDisplayCode").textContent = displayCode;
+}
+
+function openProfileEditor(initialSetup = false) {
+  $("profileError").textContent = "";
+  $("profileModal").classList.remove("hidden");
+  $("profileModalTitle").textContent = initialSetup ? "이름 등록" : "이름 변경";
+  $("profileModalDescription").textContent = initialSetup
+    ? "처음 시작하기 전에 사용할 이름을 등록하세요. 등록 후 무작위 숫자 코드가 부여됩니다."
+    : "이름만 변경됩니다. 기존 숫자 코드는 그대로 유지됩니다.";
+  $("profileNameInput").value = profile ? profile.name : "";
+  $("profileCodePreview").textContent = profile
+    ? "내 코드: #" + profile.code
+    : "등록 후 #숫자 코드가 부여됩니다.";
+  $("saveProfileButton").textContent = initialSetup ? "등록하기" : "변경 저장";
+  $("cancelProfileButton").classList.toggle("hidden", initialSetup);
+  $("profileModal").dataset.initialSetup = initialSetup ? "true" : "false";
+  $("profileNameInput").focus();
+}
+
+function closeProfileEditor() {
+  if (!profile) return;
+  $("profileModal").classList.add("hidden");
+}
+
+$("saveProfileButton").addEventListener("click", () => {
+  const name = $("profileNameInput").value.trim();
+  if (!name) {
+    $("profileError").textContent = "이름을 입력하세요.";
+    return;
+  }
+  if (name.length > 20) {
+    $("profileError").textContent = "이름은 20자 이내로 입력하세요.";
+    return;
+  }
+
+  if (profile) {
+    profile.name = name;
+  } else {
+    profile = createProfile(name);
+  }
+
+  if (!saveProfile()) {
+    $("profileError").textContent = "저장하지 못했습니다. 브라우저 저장 공간을 확인하세요.";
+    return;
+  }
+
+  renderProfile();
+  $("profileModal").classList.add("hidden");
+});
+
+$("cancelProfileButton").addEventListener("click", closeProfileEditor);
+$("changeProfileNameButton").addEventListener("click", () => openProfileEditor(false));
+
 /* =========================
    화면 이동
 ========================= */
@@ -1679,6 +1775,7 @@ if ("serviceWorker" in navigator) {
 
 function initializeApp() {
   updateAll();
+  renderProfile();
 
   if (state.pendingSummary) {
     showScreen("summaryScreen");
@@ -1689,6 +1786,8 @@ function initializeApp() {
   }
 
   saveState();
+
+  if (!profile) openProfileEditor(true);
 }
 
 setInterval(() => {
