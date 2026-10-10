@@ -446,7 +446,7 @@ function defaultState() {
     bankRate: INITIAL_BANK_RATE,
     threeChoiceUnlocked: false,
     threeChoiceMode: false,
-    backgroundTheme: "graphite",
+    backgroundTheme: "default",
     vibrationEnabled: true,
     wageNextAt: 0,
     activeGame: null,
@@ -491,7 +491,7 @@ function normalizeState(raw) {
     ),
     threeChoiceUnlocked: Boolean(raw.threeChoiceUnlocked),
     threeChoiceMode: Boolean(raw.threeChoiceMode && raw.threeChoiceUnlocked),
-    backgroundTheme: ["graphite", "cocoa", "plum", "stone"].includes(raw.backgroundTheme)
+    backgroundTheme: ["default", "graphite", "cocoa", "plum", "stone"].includes(raw.backgroundTheme)
       ? raw.backgroundTheme
       : base.backgroundTheme,
     vibrationEnabled: raw.vibrationEnabled !== false,
@@ -737,7 +737,7 @@ function setSettingsCategory(category) {
 }
 
 function applyBackgroundTheme() {
-  const allowed = ["graphite", "cocoa", "plum", "stone"];
+  const allowed = ["default", "graphite", "cocoa", "plum", "stone"];
   const theme = allowed.includes(state.backgroundTheme) ? state.backgroundTheme : "graphite";
   document.documentElement.dataset.appTheme = theme;
   document.querySelectorAll("[data-theme-value]").forEach(button => {
@@ -767,7 +767,7 @@ document.querySelectorAll("[data-settings-category]").forEach(button => {
 document.querySelectorAll("[data-theme-value]").forEach(button => {
   button.addEventListener("click", () => {
     const theme = button.dataset.themeValue;
-    if (!["graphite", "cocoa", "plum", "stone"].includes(theme)) return;
+    if (!["default", "graphite", "cocoa", "plum", "stone"].includes(theme)) return;
     state.backgroundTheme = theme;
     applyBackgroundTheme();
     saveState();
