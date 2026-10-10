@@ -818,11 +818,28 @@ window.riskGameApplyCloudProfile = cloudProfile => {
 };
 
 window.addEventListener("risk-game-account-restored", () => {
-  // 복구 성공 직후에도 첫 화면에 머물지 않도록 메인으로 이동합니다.
+  // 복구 성공 후에는 새 기기의 계정 세션과 게임 기능을 다시 활성화합니다.
+  appPermanentlyStopped = false;
   if (!state.pendingSummary && !state.activeGame) showScreen("homeScreen");
 });
 
 window.addEventListener("risk-game-account-displaced", () => {
+  // 이전 기기의 진행 상태/프로필을 즉시 분리합니다. 서버의 클라우드 저장 데이터는 삭제하지 않습니다.
+  appPermanentlyStopped = true;
+  if (saveTimer !== null) {
+    clearTimeout(saveTimer);
+    saveTimer = null;
+  }
+
+  state = defaultState();
+  profile = null;
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(PROFILE_STORAGE_KEY);
+  localStorage.removeItem("risk-game-local-updated-at");
+  LEGACY_KEYS.forEach(key => localStorage.removeItem(key));
+
+  updateAll();
+  renderProfile();
   showScreen("accountChoiceScreen");
 });
 
@@ -962,6 +979,7 @@ function showScreen(id) {
 }
 
 $("newAccountButton").addEventListener("click", () => {
+  appPermanentlyStopped = false;
   // 신규 계정은 이전 계정의 로컬 진행 데이터·프로필을 이어받지 않습니다.
   // 서버의 기존 계정과 데이터는 삭제하지 않고, 이 기기의 로컬 작업 공간만 새로 시작합니다.
   localStorage.removeItem("risk-game-account-displaced-v1");
