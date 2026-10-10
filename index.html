@@ -9,7 +9,7 @@
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./icon.svg">
   <link rel="manifest" href="./manifest.json">
-  <link rel="stylesheet" href="./style.css?v=12">
+  <link rel="stylesheet" href="./style.css?v=13">
 </head>
 <body>
 <div class="app">
@@ -20,6 +20,44 @@
   </header>
 
   <main>
+    <section id="accountChoiceScreen" class="screen account-entry-screen">
+      <div class="account-entry-hero">
+        <p class="eyebrow">RISK GAME ACCOUNT</p>
+        <div class="account-entry-icon">🎲</div>
+        <h2>리스크 게임 시작</h2>
+        <p>새 계정을 만들거나 기존 계정을 복구하세요.</p>
+      </div>
+      <div class="account-entry-actions">
+        <button id="newAccountButton" class="account-entry-button primary">
+          <span class="account-entry-button-icon">✨</span>
+          <span><strong>신규</strong><small>새 계정으로 시작하기</small></span>
+          <span class="account-entry-arrow">›</span>
+        </button>
+        <button id="openRestoreScreenButton" class="account-entry-button">
+          <span class="account-entry-button-icon">🔑</span>
+          <span><strong>기존 계정 복구</strong><small>복구 비밀번호로 계정 불러오기</small></span>
+          <span class="account-entry-arrow">›</span>
+        </button>
+      </div>
+      <p class="account-entry-note">기존 계정 복구를 선택해도 현재 기기의 데이터는 복구가 성공할 때까지 삭제되지 않습니다.</p>
+    </section>
+
+    <section id="restoreScreen" class="screen hidden">
+      <div class="section-heading">
+        <h2>기존 계정 복구</h2>
+        <p>복구 비밀번호를 입력해 계정과 저장된 진행 데이터를 불러오세요.</p>
+      </div>
+      <div class="panel recovery-panel">
+        <p class="eyebrow">RESTORE ACCOUNT</p>
+        <h3>다른 기기에서 복구</h3>
+        <p class="muted">복구 비밀번호를 입력하면 기존 온라인 계정과 친구 코드, 저장된 게임 진행 데이터를 불러옵니다. 현재 기기의 데이터는 복구가 완료될 때까지 삭제하지 않습니다.</p>
+        <label for="restoreRecoveryPassword">복구 비밀번호</label>
+        <input id="restoreRecoveryPassword" type="password" autocomplete="current-password" placeholder="복구 비밀번호 입력" minlength="10" maxlength="128">
+        <button id="restoreRecoveryAccountButton" class="wide-button primary">계정 복구</button>
+        <p id="restoreRecoveryMessage" class="recovery-message" role="status"></p>
+      </div>
+    </section>
+
     <section id="homeScreen" class="screen">
       <div class="hero">
         <p class="eyebrow">RISK & REWARD</p>
@@ -286,15 +324,6 @@
         <button id="changeRecoveryPasswordButton" class="wide-button primary">복구 비밀번호 변경</button>
         <p id="changeRecoveryMessage" class="recovery-message" role="status"></p>
       </div>
-      <div class="panel recovery-panel">
-        <p class="eyebrow">RESTORE ACCOUNT</p>
-        <h3>다른 기기에서 복구</h3>
-        <p class="muted">복구 비밀번호를 입력하면 기존 온라인 계정과 친구 코드, 저장된 게임 진행 데이터를 불러옵니다. 현재 기기의 데이터는 복구가 완료될 때까지 삭제하지 않습니다.</p>
-        <label for="restoreRecoveryPassword">복구 비밀번호</label>
-        <input id="restoreRecoveryPassword" type="password" autocomplete="current-password" placeholder="복구 비밀번호 입력" minlength="10" maxlength="128">
-        <button id="restoreRecoveryAccountButton" class="wide-button primary">계정 복구</button>
-        <p id="restoreRecoveryMessage" class="recovery-message" role="status"></p>
-      </div>
       <div class="panel">
         <p>게임 진행 데이터는 이 기기에 자동 저장됩니다. 복구 비밀번호를 설정하면 이 계정의 게임 데이터도 온라인에 동기화됩니다.</p>
         <p class="muted">초기화하면 이 기기의 예산, 업그레이드, 은행, 시급 대기 시간, 게임 진행 상황이 처음 상태로 돌아갑니다. 계정 이름과 코드는 유지됩니다.</p>
@@ -460,10 +489,10 @@
   </div>
 </div>
 <div id="purchaseNotice" class="purchase-notice" role="status" aria-live="polite"></div>
-<script src="./script.js?v=20" defer></script>
+<script src="./script.js?v=21" defer></script>
 <script src="./supabase-config.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <script src="./friends.js?v=17" defer></script>
-<script src="./recovery.js?v=1" defer></script>
+<script src="./recovery.js?v=2" defer></script>
 </body>
 </html>
