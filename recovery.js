@@ -301,7 +301,7 @@
           status.classList.add("recovery-error");
         }
       }
-      if (status) {
+      if (!detail.includes("계정을 확인할 수 없습니다") && status) {
         status.textContent = detail + " 계정은 삭제되지 않았을 수 있으므로 화면을 확인한 뒤 다시 시도하세요.";
         status.classList.add("recovery-error");
       }
