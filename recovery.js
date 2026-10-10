@@ -180,7 +180,9 @@
   }
 
   function init() {
-    if (config.url && config.anonKey && window.supabase?.createClient) {
+    if (window.riskGameSupabaseClient) {
+      client = window.riskGameSupabaseClient;
+    } else if (config.url && config.anonKey && window.supabase?.createClient) {
       client = window.supabase.createClient(config.url, config.anonKey, {
         auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
       });
