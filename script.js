@@ -166,10 +166,10 @@ const RISKY_CHOICES = [
   },
   {
     id: "risk50",
-    effect: 5,
-    title: "+5%",
-    penalty: "패널티: 19% 확률로 25% 손실",
-    penaltyChance: 19,
+    effect: 6,
+    title: "+6%",
+    penalty: "패널티: 23% 확률로 25% 손실",
+    penaltyChance: 23,
     penaltyType: "loss25"
   },
   {
@@ -206,24 +206,24 @@ const RISKY_CHOICES = [
   },
   {
     id: "riskMinus25",
-    effect: 5,
-    title: "+5%",
-    penalty: "패널티: 19% 확률로 25% 손실",
-    penaltyChance: 19,
+    effect: 7,
+    title: "+7%",
+    penalty: "패널티: 27% 확률로 25% 손실",
+    penaltyChance: 27,
     penaltyType: "loss25"
   },
   {
     id: "riskMinus50",
-    effect: 10,
-    title: "+10%",
-    penalty: "패널티: 18% 확률로 50% 손실",
-    penaltyChance: 18,
+    effect: 12,
+    title: "+12%",
+    penalty: "패널티: 21% 확률로 50% 손실",
+    penaltyChance: 21,
     penaltyType: "loss50"
   },
   {
     id: "riskMinus15Bonus",
-    effect: -4,
-    title: "−4%",
+    effect: -3,
+    title: "−3%",
     penalty: "보너스: 다음 5턴 손실 패널티 확률 감소",
     penaltyChance: 0,
     penaltyType: "none",
