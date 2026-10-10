@@ -1141,3 +1141,39 @@ input::-webkit-inner-spin-button, input::-webkit-outer-spin-button {
   .friend-request-actions { width: 100%; }
   .friend-request-actions button { flex: 1; }
 }
+
+
+/* 계정 복구 및 비밀번호 */
+.recovery-panel { margin-bottom: 14px; }
+.recovery-panel h3 { margin: 0 0 8px; font-size: 18px; }
+.recovery-panel label,
+#recoverySetupModal label {
+  display: block;
+  margin: 13px 0 6px;
+  color: #cbd7ed;
+  font-size: 13px;
+  font-weight: 700;
+}
+.recovery-panel input,
+#recoverySetupModal input {
+  display: block;
+  width: 100%;
+  min-height: 46px;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #0c1425;
+  color: var(--text);
+  font: inherit;
+}
+.recovery-panel .wide-button { margin-top: 14px; }
+.recovery-message {
+  min-height: 18px;
+  margin: 10px 0 0;
+  color: var(--green);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.recovery-message.recovery-error { color: #ff7287; }
+#recoverySetupModal .modal-card { max-height: 90dvh; overflow-y: auto; }

@@ -1,0 +1,228 @@
+/* Risk Game recovery password + cross-device save sync. */
+(() => {
+  "use strict";
+  const config = window.RISK_GAME_SUPABASE_CONFIG || {};
+  const $ = id => document.getElementById(id);
+  let client = null;
+  let saveTimer = null;
+  let restoreInProgress = false;
+
+  const RECOVERY_ENABLED_KEY = "risk-game-recovery-enabled-v1";
+
+  function message(id, text, isError = false) {
+    const el = $(id);
+    if (!el) return;
+    el.textContent = text || "";
+    el.classList.toggle("recovery-error", Boolean(isError));
+  }
+
+  function passwordValid(value) {
+    return typeof value === "string" && value.length >= 12 && value.length <= 128;
+  }
+
+  async function invoke(action, extra = {}) {
+    if (!client) throw new Error("온라인 계정 연결을 준비하지 못했습니다. 인터넷 연결을 확인하세요.");
+    const { data, error } = await client.functions.invoke("risk-game-recovery", {
+      body: { action, ...extra }
+    });
+    if (error) {
+      let detail = "";
+      try {
+        detail = error.context && typeof error.context.json === "function"
+          ? String((await error.context.json())?.error || "")
+          : "";
+      } catch {}
+      throw new Error(detail || error.message || "서버 요청에 실패했습니다.");
+    }
+    if (data?.error) throw new Error(data.error);
+    return data || {};
+  }
+
+  function setBusy(ids, busy) {
+    ids.forEach(id => {
+      const button = $(id);
+      if (button) button.disabled = busy;
+    });
+  }
+
+  async function setupPassword() {
+    const password = $("setupRecoveryPassword").value;
+    const confirm = $("setupRecoveryPasswordConfirm").value;
+    if (!passwordValid(password)) {
+      message("setupRecoveryMessage", "비밀번호는 12~128자로 입력하세요.", true);
+      return;
+    }
+    if (password !== confirm) {
+      message("setupRecoveryMessage", "두 비밀번호가 일치하지 않습니다.", true);
+      return;
+    }
+
+    setBusy(["saveRecoverySetupButton", "skipRecoverySetupButton"], true);
+    message("setupRecoveryMessage", "복구 비밀번호를 안전하게 등록하고 있습니다.");
+    try {
+      await invoke("register", { password });
+      localStorage.setItem(RECOVERY_ENABLED_KEY, "true");
+      $("recoverySetupModal").classList.add("hidden");
+      $("setupRecoveryPassword").value = "";
+      $("setupRecoveryPasswordConfirm").value = "";
+      await saveCloudState();
+      message("changeRecoveryMessage", "복구 비밀번호가 설정되었습니다.");
+      message("setupRecoveryMessage", "");
+    } catch (error) {
+      message("setupRecoveryMessage", String(error?.message || "등록에 실패했습니다."), true);
+    } finally {
+      setBusy(["saveRecoverySetupButton", "skipRecoverySetupButton"], false);
+    }
+  }
+
+  async function changePassword() {
+    const oldPassword = $("recoveryOldPassword").value;
+    const password = $("recoveryNewPassword").value;
+    const confirm = $("recoveryNewPasswordConfirm").value;
+    if (!passwordValid(oldPassword)) {
+      message("changeRecoveryMessage", "기존 비밀번호를 입력하세요.", true);
+      return;
+    }
+    if (!passwordValid(password)) {
+      message("changeRecoveryMessage", "새 비밀번호는 12~128자로 입력하세요.", true);
+      return;
+    }
+    if (password !== confirm) {
+      message("changeRecoveryMessage", "새 비밀번호 두 칸이 일치하지 않습니다.", true);
+      return;
+    }
+    setBusy(["changeRecoveryPasswordButton"], true);
+    message("changeRecoveryMessage", "비밀번호를 변경하고 있습니다.");
+    try {
+      await invoke("change", { oldPassword, password });
+      localStorage.setItem(RECOVERY_ENABLED_KEY, "true");
+      $("recoveryOldPassword").value = "";
+      $("recoveryNewPassword").value = "";
+      $("recoveryNewPasswordConfirm").value = "";
+      message("changeRecoveryMessage", "복구 비밀번호가 변경되었습니다.");
+    } catch (error) {
+      message("changeRecoveryMessage", String(error?.message || "변경에 실패했습니다."), true);
+    } finally {
+      setBusy(["changeRecoveryPasswordButton"], false);
+    }
+  }
+
+  async function restoreAccount() {
+    if (restoreInProgress) return;
+    const password = $("restoreRecoveryPassword").value;
+    if (!passwordValid(password)) {
+      message("restoreRecoveryMessage", "복구 비밀번호를 12자 이상 입력하세요.", true);
+      return;
+    }
+
+    restoreInProgress = true;
+    setBusy(["restoreRecoveryAccountButton"], true);
+    message("restoreRecoveryMessage", "계정을 확인하고 있습니다. 기존 기기의 데이터는 삭제하지 않습니다.");
+    try {
+      const found = await invoke("lookup", { password });
+      if (!found.email) throw new Error("복구 비밀번호가 일치하는 계정을 찾지 못했습니다.");
+
+      const { data, error } = await client.auth.signInWithPassword({
+        email: found.email,
+        password
+      });
+      if (error) throw error;
+      if (!data?.user || !data?.session) throw new Error("계정 로그인 응답을 확인할 수 없습니다.");
+
+      const result = await invoke("load_state");
+      localStorage.setItem(RECOVERY_ENABLED_KEY, "true");
+      if (result.payload && typeof window.riskGameApplyCloudState === "function") {
+        const applied = window.riskGameApplyCloudState(result.payload);
+        if (!applied) throw new Error("계정은 연결됐지만 게임 데이터를 적용하지 못했습니다. 현재 기기 데이터는 그대로 남아 있습니다.");
+        $("restoreRecoveryPassword").value = "";
+        message("restoreRecoveryMessage", "계정과 게임 진행 데이터를 복구했습니다.");
+      } else {
+        $("restoreRecoveryPassword").value = "";
+        message("restoreRecoveryMessage", "계정은 복구했지만 서버에 저장된 게임 데이터가 없어 현재 기기의 게임 데이터는 유지했습니다.");
+        await saveCloudState();
+      }
+      window.dispatchEvent(new Event("risk-game-account-restored"));
+    } catch (error) {
+      message("restoreRecoveryMessage", String(error?.message || "계정 복구에 실패했습니다."), true);
+    } finally {
+      restoreInProgress = false;
+      setBusy(["restoreRecoveryAccountButton"], false);
+    }
+  }
+
+  async function saveCloudState() {
+    if (!client || localStorage.getItem(RECOVERY_ENABLED_KEY) !== "true" ||
+        typeof window.riskGameGetState !== "function") return;
+    try {
+      await invoke("save_state", { payload: window.riskGameGetState() });
+    } catch (error) {
+      console.error("게임 데이터 클라우드 저장 실패:", error);
+    }
+  }
+
+  function scheduleCloudSave() {
+    if (restoreInProgress || localStorage.getItem(RECOVERY_ENABLED_KEY) !== "true") return;
+    if (saveTimer !== null) clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      saveTimer = null;
+      saveCloudState();
+    }, 1800);
+  }
+
+  function openInitialSetup() {
+    const modal = $("recoverySetupModal");
+    if (!modal || localStorage.getItem(RECOVERY_ENABLED_KEY) === "true") return;
+    $("setupRecoveryPassword").value = "";
+    $("setupRecoveryPasswordConfirm").value = "";
+    message("setupRecoveryMessage", "");
+    modal.classList.remove("hidden");
+    $("setupRecoveryPassword").focus();
+  }
+
+  function init() {
+    if (window.riskGameSupabaseClient) {
+      client = window.riskGameSupabaseClient;
+    } else if (config.url && config.anonKey && window.supabase?.createClient) {
+      client = window.supabase.createClient(config.url, config.anonKey, {
+        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
+      });
+    }
+
+    $("saveRecoverySetupButton")?.addEventListener("click", setupPassword);
+    $("skipRecoverySetupButton")?.addEventListener("click", () => {
+      $("recoverySetupModal").classList.add("hidden");
+      message("setupRecoveryMessage", "");
+    });
+    $("changeRecoveryPasswordButton")?.addEventListener("click", changePassword);
+    $("restoreRecoveryAccountButton")?.addEventListener("click", restoreAccount);
+
+    ["setupRecoveryPassword", "setupRecoveryPasswordConfirm"].forEach(id => {
+      $(id)?.addEventListener("keydown", event => {
+        if (event.key === "Enter") setupPassword();
+      });
+    });
+    $("recoveryNewPasswordConfirm")?.addEventListener("keydown", event => {
+      if (event.key === "Enter") changePassword();
+    });
+    $("restoreRecoveryPassword")?.addEventListener("keydown", event => {
+      if (event.key === "Enter") restoreAccount();
+    });
+
+    window.addEventListener("risk-game-initial-profile-created", openInitialSetup);
+    window.addEventListener("risk-game-state-updated", scheduleCloudSave);
+    window.addEventListener("pagehide", saveCloudState);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") saveCloudState();
+    });
+
+    if (localStorage.getItem(RECOVERY_ENABLED_KEY) === "true") {
+      window.setTimeout(saveCloudState, 2500);
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init, { once: true });
+  } else {
+    init();
+  }
+})();

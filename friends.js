@@ -95,15 +95,24 @@
   async function fetchMyProfile() {
     if (!client || !currentUser) return null;
 
-    // 첫 연결 때 이 기기에 이미 발급된 4자리 코드를 서버 프로필에 우선 적용합니다.
-    // 코드가 다른 사용자에게 이미 사용 중이면 서버에서 발급한 코드를 유지합니다.
+    // 계정이 바뀌었을 때 먼저 기존 서버 프로필을 확인합니다.
+    // 복구한 계정의 이름/코드를 이 기기의 임시 프로필로 덮어쓰지 않습니다.
     if (syncedUserId !== currentUser.id) {
-      const local = localProfile();
-      const { error: syncError } = await client.rpc("sync_risk_game_profile", {
-        p_name: String(local.name || "플레이어").trim().slice(0, 20) || "플레이어",
-        p_code: String(local.code || "")
-      });
-      if (syncError) throw syncError;
+      const { data: existingProfile, error: existingProfileError } = await client
+        .from("profiles")
+        .select("id")
+        .eq("id", currentUser.id)
+        .maybeSingle();
+      if (existingProfileError) throw existingProfileError;
+
+      if (!existingProfile) {
+        const local = localProfile();
+        const { error: syncError } = await client.rpc("sync_risk_game_profile", {
+          p_name: String(local.name || "플레이어").trim().slice(0, 20) || "플레이어",
+          p_code: String(local.code || "")
+        });
+        if (syncError) throw syncError;
+      }
       syncedUserId = currentUser.id;
     }
 
@@ -571,6 +580,7 @@
       client = window.supabase.createClient(config.url, config.anonKey, {
         auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
       });
+      window.riskGameSupabaseClient = client;
     }
 
     $("addFriendButton").addEventListener("click", addFriend);
@@ -630,8 +640,16 @@
     }
 
     client.auth.onAuthStateChange((_event, session) => {
+      const previousUserId = currentUser?.id || null;
       currentUser = session?.user || null;
       updateAccountUi();
+      if (currentUser && currentUser.id !== previousUserId) {
+        window.setTimeout(() => {
+          refreshCloudData().catch(error => {
+            console.error("계정 전환 후 프로필 새로고침 실패:", error);
+          });
+        }, 0);
+      }
     });
 
     (async () => {
