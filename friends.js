@@ -21,6 +21,16 @@
   let activeRequestModalId = null;
   const notifiedRequestIds = new Set();
 
+  function withTimeout(promise, label, milliseconds = 12000) {
+    let timer;
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timer = window.setTimeout(() => reject(new Error(label + " 요청이 12초 이상 응답하지 않습니다. 인터넷 연결과 Supabase 설정을 확인하세요.")), milliseconds);
+      })
+    ]).finally(() => window.clearTimeout(timer));
+  }
+
   function setMessage(message, isError = false) {
     const el = $("friendMessage");
     if (!el) return;
@@ -463,21 +473,21 @@
     });
 
     (async () => {
-      const { data, error } = await client.auth.getSession();
+      const { data, error } = await withTimeout(client.auth.getSession(), "온라인 계정 확인");
       if (error) throw error;
       if (data.session) {
         currentUser = data.session.user;
       } else {
         // 사용자가 이메일/비밀번호를 입력하지 않아도 기기별 익명 계정을 자동 생성합니다.
         const local = localProfile();
-        const { data: anonymousData, error: anonymousError } = await client.auth.signInAnonymously({
+        const { data: anonymousData, error: anonymousError } = await withTimeout(client.auth.signInAnonymously({
           options: { data: { display_name: String(local.name || "플레이어").trim().slice(0, 20) || "플레이어" } }
-        });
+        }), "익명 계정 생성");
         if (anonymousError) throw anonymousError;
         currentUser = anonymousData.user;
       }
       updateAccountUi();
-      await refreshCloudData();
+      await withTimeout(refreshCloudData(), "내 이름과 고유 코드 불러오기");
     })().catch(error => {
       console.error("온라인 친구 기능 연결 실패:", error);
       const message = String(error?.message || "");
@@ -489,6 +499,10 @@
         setMessage("온라인 연결 실패: " + (message || "잠시 후 다시 시도하세요."), true);
       }
       updateAccountUi();
+      const status = $("friendCloudStatus");
+      if (status) status.textContent = "온라인 연결 실패";
+      const code = $("friendMyCode");
+      if (code && code.textContent === "불러오는 중...") code.textContent = "연결 실패";
       loadFriends().catch(() => {});
       loadRequests().catch(() => {});
     });
