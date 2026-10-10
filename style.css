@@ -1048,6 +1048,28 @@ input::-webkit-inner-spin-button, input::-webkit-outer-spin-button {
   flex-direction: column;
   min-width: 0;
 }
+.friend-name-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.friend-presence-dot {
+  display: inline-block;
+  flex: 0 0 9px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #858b98;
+  box-shadow: 0 0 0 2px rgba(133,139,152,.13);
+}
+.friend-presence-dot.is-online {
+  background: #22c55e;
+  box-shadow: 0 0 0 2px rgba(34,197,94,.18);
+}
+.friend-budget {
+  margin-top: 3px;
+}
 .friend-row-details strong {
   overflow-wrap: anywhere;
 }
