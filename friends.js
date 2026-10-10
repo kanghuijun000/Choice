@@ -592,8 +592,9 @@
 
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible") {
-        // 내 접속 신호는 유지하되, 친구 목록은 사용자가 버튼을 눌렀을 때만 갱신합니다.
+        // 화면에 돌아오면 접속 신호와 받은 친구 요청을 즉시 갱신합니다.
         syncMyPresence(true);
+        loadRequests().catch(error => console.error("친구 요청 새로고침 실패:", error));
       }
     });
 
@@ -601,8 +602,11 @@
     loadRequests().catch(error => console.error("친구 요청 불러오기 실패:", error));
     window.setInterval(() => {
       if (currentUser) {
-        // 친구 목록 자동 갱신은 하지 않고, 내 온라인 상태 유지를 위한 신호만 보냅니다.
+        // 친구 목록은 수동 갱신으로 유지하고, 받은 친구 요청과 접속 신호는 자동 갱신합니다.
         syncMyPresence().catch(() => {});
+        if (document.visibilityState === "visible") {
+          loadRequests().catch(error => console.error("친구 요청 자동 갱신 실패:", error));
+        }
       }
     }, 5000);
 
