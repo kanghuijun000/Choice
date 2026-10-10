@@ -18,6 +18,8 @@
   let currentUser = null;
   let busy = false;
   let syncedUserId = null;
+  let activeRequestModalId = null;
+  const notifiedRequestIds = new Set();
 
   function setMessage(message, isError = false) {
     const el = $("friendMessage");
@@ -33,7 +35,7 @@
         const button = $(id);
         if (button) button.disabled = value;
       });
-    document.querySelectorAll("#friendRequests button").forEach(button => { button.disabled = value; });
+    document.querySelectorAll("#friendRequests button, #friendRequestModal button").forEach(button => { button.disabled = value; });
   }
 
   function localProfile() {
@@ -160,6 +162,20 @@
     return row;
   }
 
+  function showRequestModal(request) {
+    if (!request || activeRequestModalId) return;
+    activeRequestModalId = request.id;
+    $("friendRequestModalText").textContent =
+      (request.sender_name || "이름 없는 플레이어") + " (#" +
+      (request.sender_code || "----") + ") 님이 친구 요청을 보냈습니다.";
+    $("friendRequestModal").classList.remove("hidden");
+  }
+
+  function closeRequestModal() {
+    $("friendRequestModal").classList.add("hidden");
+    activeRequestModalId = null;
+  }
+
   async function loadRequests() {
     const list = $("friendRequests");
     if (!list) return;
@@ -178,6 +194,13 @@
       .eq("status", "pending")
       .order("created_at", { ascending: true });
     if (error) throw error;
+    if (requests && requests.length) {
+      const nextUnseen = requests.find(request => !notifiedRequestIds.has(request.id));
+      if (nextUnseen && !activeRequestModalId) {
+        notifiedRequestIds.add(nextUnseen.id);
+        showRequestModal(nextUnseen);
+      }
+    }
     if (!requests || requests.length === 0) {
       const empty = document.createElement("p");
       empty.className = "muted friend-empty";
@@ -391,6 +414,17 @@
     $("friendCodeOnlyInput").addEventListener("keydown", event => {
       if (event.key === "Enter") addFriend();
     });
+    $("friendRequestModalAccept").addEventListener("click", () => {
+      const requestId = activeRequestModalId;
+      closeRequestModal();
+      if (requestId) respondToRequest(requestId, true);
+    });
+    $("friendRequestModalDecline").addEventListener("click", () => {
+      const requestId = activeRequestModalId;
+      closeRequestModal();
+      if (requestId) respondToRequest(requestId, false);
+    });
+    $("friendRequestModalLater").addEventListener("click", closeRequestModal);
 
     $("friendMenuButton").addEventListener("click", async () => {
       setMessage("");
@@ -408,7 +442,7 @@
     updateAccountUi();
     loadRequests().catch(error => console.error("친구 요청 불러오기 실패:", error));
     window.setInterval(() => {
-      if (currentUser && !$("friendScreen").classList.contains("hidden")) {
+      if (currentUser) {
         loadRequests().catch(error => console.error("친구 요청 새로고침 실패:", error));
       }
     }, 15000);
