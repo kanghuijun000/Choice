@@ -1322,6 +1322,8 @@ input::-webkit-inner-spin-button, input::-webkit-outer-spin-button {
 }
 .reset-settings-panel > p { font-size: 13px; line-height: 1.65; }
 .reset-settings-panel > .muted { font-size: 12px; }
+:root[data-app-theme="default"] { --bg: #0b1020; --bg-glow: #172744; }
+.theme-default { background: linear-gradient(135deg, #0b1020, #172744); }
 :root[data-app-theme="graphite"] { --bg: #24272b; --bg-glow: #34383e; }
 :root[data-app-theme="cocoa"] { --bg: #2d2117; --bg-glow: #403023; }
 :root[data-app-theme="plum"] { --bg: #302132; --bg-glow: #433047; }
