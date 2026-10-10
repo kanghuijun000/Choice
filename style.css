@@ -74,8 +74,10 @@ button:disabled {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: rgba(11, 16, 32, 0.94);
-  backdrop-filter: blur(12px);
+  /* 모바일 브라우저에서 스크롤 중 sticky + backdrop-filter가 화면을 깨뜨리는 현상 방지 */
+  background: #0b1020;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   border-bottom: 1px solid rgba(120, 145, 190, 0.12);
 }
 
