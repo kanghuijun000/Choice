@@ -26,6 +26,18 @@ function validPassword(password: unknown): password is string {
     password.length <= 128 && !password.includes("\u0000");
 }
 
+function validDeviceId(deviceId: unknown): deviceId is string {
+  return typeof deviceId === "string" &&
+    /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(deviceId);
+}
+
+async function deviceIsActive(service: ReturnType<typeof createClient>, userId: string, deviceId: unknown) {
+  if (!validDeviceId(deviceId)) return false;
+  const { data, error } = await service.from("risk_game_device_sessions")
+    .select("device_id").eq("user_id", userId).maybeSingle();
+  return !error && data?.device_id === deviceId;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return reply({ error: "지원하지 않는 요청입니다." }, 405);
@@ -72,6 +84,48 @@ Deno.serve(async (req) => {
   const { data: authData, error: authError } = await userClient.auth.getUser(token);
   if (authError || !authData.user) return reply({ error: "계정을 확인할 수 없습니다. 다시 연결해 주세요." }, 401);
   const user = authData.user;
+
+  if (action === "claim_device") {
+    const deviceId = body.deviceId;
+    if (!validDeviceId(deviceId)) return reply({ error: "기기 식별 정보를 확인할 수 없습니다. 앱을 새로고침해 주세요." }, 400);
+
+    const { data: credential, error: credentialError } = await service.from("risk_game_recovery_credentials")
+      .select("password_digest").eq("user_id", user.id).maybeSingle();
+    if (credentialError) return reply({ error: "기기 연결 상태를 확인하지 못했습니다." }, 500);
+    if (credential) {
+      if (!validPassword(body.password)) return reply({ error: "기기 연결을 확인할 복구 비밀번호가 필요합니다." }, 401);
+      const digest = await digestPassword(body.password, hmacSecret);
+      if (digest !== credential.password_digest) return reply({ error: "복구 비밀번호가 일치하지 않습니다." }, 401);
+    }
+
+    const { error } = await service.from("risk_game_device_sessions").upsert({
+      user_id: user.id, device_id: deviceId, updated_at: new Date().toISOString(),
+    }, { onConflict: "user_id" });
+    if (error) return reply({ error: "이 기기를 계정에 연결하지 못했습니다." }, 500);
+    return reply({ ok: true, active: true });
+  }
+
+  if (action === "check_device") {
+    const deviceId = body.deviceId;
+    if (!validDeviceId(deviceId)) return reply({ error: "기기 식별 정보를 확인할 수 없습니다." }, 400);
+
+    // 기존 계정에 아직 기기 기록이 없으면 최초 실행 기기를 등록하되,
+    // 다른 기기가 이미 등록한 기록은 절대 덮어쓰지 않습니다.
+    const { error: insertError } = await service.from("risk_game_device_sessions")
+      .insert({ user_id: user.id, device_id: deviceId, updated_at: new Date().toISOString() });
+    if (insertError && insertError.code !== "23505") {
+      return reply({ error: "기기 연결 상태를 확인하지 못했습니다." }, 500);
+    }
+    const active = await deviceIsActive(service, user.id, deviceId);
+    return reply({ active });
+  }
+
+  if (["register", "change", "save_state", "load_state"].includes(String(action))) {
+    const deviceId = body.deviceId;
+    if (!await deviceIsActive(service, user.id, deviceId)) {
+      return reply({ error: "다른 기기에서 이 계정을 복구했습니다. 이 기기에서는 계정을 다시 복구해야 합니다.", code: "DEVICE_REPLACED" }, 409);
+    }
+  }
 
   if (action === "register" || action === "change") {
     const password = body.password;
