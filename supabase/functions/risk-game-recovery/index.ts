@@ -108,6 +108,36 @@ Deno.serve(async (req) => {
   if (authError || !authData.user) return reply({ error: "계정을 확인할 수 없습니다. 다시 연결해 주세요." }, 401);
   const user = authData.user;
 
+  if (action === "delete_account") {
+    const { data: credential, error: credentialError } = await service
+      .from("risk_game_recovery_credentials")
+      .select("user_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (credentialError) {
+      return reply({ error: "복구 계정 상태를 확인하지 못해 삭제를 진행할 수 없습니다." }, 500);
+    }
+
+    // If recovery is configured, only the currently owning device may delete the account.
+    if (credential) {
+      if (!validDeviceId(body.deviceId)) {
+        return reply({ error: "기기 식별 정보를 확인할 수 없습니다. 앱을 새로고침해 주세요." }, 400);
+      }
+      if (!await deviceIsActive(service, user.id, body.deviceId)) {
+        return reply({ error: "다른 기기에서 계정을 사용 중입니다. 현재 계정을 복구한 기기에서 삭제해 주세요." }, 409);
+      }
+    }
+
+    // Account-owned records cascade with auth.users, including the recovery password,
+    // password fingerprints, cloud save, profile/friend code, device session and friend links.
+    const { error: deleteError } = await service.auth.admin.deleteUser(user.id);
+    if (deleteError) {
+      console.error("Risk Game account deletion failed:", deleteError);
+      return reply({ error: "서버에서 계정 삭제를 완료하지 못했습니다. 잠시 후 다시 시도하세요." }, 500);
+    }
+    return reply({ ok: true, deleted: true });
+  }
+
   if (action === "claim_device") {
     const deviceId = body.deviceId;
     if (!validDeviceId(deviceId)) return reply({ error: "기기 식별 정보를 확인할 수 없습니다. 앱을 새로고침해 주세요." }, 400);
