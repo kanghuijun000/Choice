@@ -1210,33 +1210,33 @@ function updateShop() {
   $("buyLimitButton").classList.toggle("unavailable", limitMaxed || state.budget < upgrade.cost);
   $("buyLimitButton").setAttribute("aria-disabled", String(limitMaxed || state.budget < upgrade.cost));
   $("buyLimitButton").querySelector("small").textContent =
-    limitMaxed ? "최대" : (state.budget < upgrade.cost ? "구매불가" : "구매");
+    limitMaxed ? "최대" : "구매";
 
   $("shopRerollDisplay").textContent = `${state.rerolls} / ${state.rerollCap}`;
   $("buyRerollButton").classList.toggle("unavailable", rerollMaxed || state.budget < 10000);
   $("buyRerollButton").setAttribute("aria-disabled", String(rerollMaxed || state.budget < 10000));
   $("buyRerollButton").querySelector("small").textContent =
-    rerollMaxed ? "최대" : (state.budget < 10000 ? "구매불가" : "구매");
+    rerollMaxed ? "최대" : "구매";
 
   $("shopCapDisplay").textContent = `${state.rerollCap}개`;
   $("capPrice").textContent = capMaxed ? "최대" : moneyText(capUpgradeCost());
   $("buyCapButton").classList.toggle("unavailable", capMaxed || state.budget < capUpgradeCost());
   $("buyCapButton").setAttribute("aria-disabled", String(capMaxed || state.budget < capUpgradeCost()));
   $("buyCapButton").querySelector("small").textContent =
-    capMaxed ? "최대" : (state.budget < capUpgradeCost() ? "구매불가" : "구매");
+    capMaxed ? "최대" : "구매";
 
   $("threeChoiceUnlockDisplay").textContent = threeChoiceMaxed ? "해금 완료" : "미해금";
   $("threeChoicePrice").textContent = threeChoiceMaxed ? "구매 완료" : moneyText(100000000);
   $("buyThreeChoiceButton").classList.toggle("unavailable", threeChoiceMaxed || state.budget < 100000000);
   $("buyThreeChoiceButton").setAttribute("aria-disabled", String(threeChoiceMaxed || state.budget < 100000000));
-  $("threeChoiceBuyLabel").textContent = threeChoiceMaxed ? "구매 완료" : (state.budget < 100000000 ? "구매불가" : "구매");
+  $("threeChoiceBuyLabel").textContent = threeChoiceMaxed ? "구매 완료" : "구매";
 
   $("shopBankRateDisplay").textContent = `${state.bankRate}%`;
   $("bankRatePrice").textContent = rateMaxed ? "최대" : moneyText(rateCost);
   $("buyBankRateButton").classList.toggle("unavailable", rateMaxed || state.budget < rateCost);
   $("buyBankRateButton").setAttribute("aria-disabled", String(rateMaxed || state.budget < rateCost));
   $("buyBankRateButton").querySelector("small").textContent =
-    rateMaxed ? "최대" : (state.budget < rateCost ? "구매불가" : "구매");
+    rateMaxed ? "최대" : "구매";
 }
 
 let shopMessageTimer = null;
