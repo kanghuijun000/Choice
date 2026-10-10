@@ -278,8 +278,9 @@
       await loadRequests();
       updateAccountUi();
     } catch (error) {
-      console.error(error);
-      setMessage("계정 정보를 불러오지 못했습니다. Supabase SQL 설정과 연결 상태를 확인하세요.", true);
+      console.error("친구 데이터 동기화 실패:", error);
+      setMessage("친구 데이터를 불러오지 못했습니다: " + String(error?.message || "알 수 없는 오류"), true);
+      throw error;
     }
   }
 
@@ -560,9 +561,9 @@
       }
       updateAccountUi();
       const status = $("friendCloudStatus");
-      if (status) status.textContent = "온라인 연결 실패";
+      if (status) status.textContent = "온라인 연결 실패 · " + connectionErrorMessage.slice(0, 180);
       const code = $("friendMyCode");
-      if (code && code.textContent === "불러오는 중...") code.textContent = "연결 실패";
+      if (code && (code.textContent === "불러오는 중..." || code.textContent === "연결 실패")) code.textContent = "연결 실패";
       loadFriends().catch(() => {});
       loadRequests().catch(() => {});
     });
