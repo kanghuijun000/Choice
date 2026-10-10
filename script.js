@@ -704,6 +704,11 @@ window.riskGameApplyCloudProfile = cloudProfile => {
   renderProfile();
 };
 
+window.addEventListener("risk-game-account-restored", () => {
+  // 복구 성공 직후에도 첫 화면에 머물지 않도록 메인으로 이동합니다.
+  if (!state.pendingSummary && !state.activeGame) showScreen("homeScreen");
+});
+
 function openProfileEditor(initialSetup = false) {
   $("profileError").textContent = "";
   $("profileModal").classList.remove("hidden");
@@ -1925,6 +1930,12 @@ function initializeApp() {
     showScreen("summaryScreen");
   } else if (state.activeGame) {
     showScreen("gameScreen");
+  } else if (
+    profile ||
+    localStorage.getItem("risk-game-recovery-enabled-v1") === "true"
+  ) {
+    // 이미 등록했거나 기존 계정을 복구한 사용자는 새로고침 후에도 메인으로 진입합니다.
+    showScreen("homeScreen");
   } else {
     showScreen("accountChoiceScreen");
   }
