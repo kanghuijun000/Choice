@@ -27,27 +27,65 @@
     if (displacementHandled) return;
     displacementHandled = true;
     deviceVerified = false;
+
     if (saveTimer !== null) {
       clearTimeout(saveTimer);
       saveTimer = null;
     }
+
+    // 이 기기에서만 세션을 종료합니다. global 로그아웃은 새 기기까지 끊을 수 있습니다.
     localStorage.removeItem(RECOVERY_ENABLED_KEY);
     localStorage.setItem(DISPLACED_KEY, "true");
-    client?.auth.signOut().catch(() => {});
+    try {
+      const signOut = client?.auth.signOut({ scope: "local" });
+      signOut?.catch(error => console.warn("이전 기기 로그아웃 실패:", error));
+    } catch (error) {
+      console.warn("이전 기기 로그아웃 실패:", error);
+    }
+
+    // 화면을 즉시 계정 선택으로 돌리고, 현재 기기의 계정 데이터 정리는 script.js에서 처리합니다.
     window.dispatchEvent(new Event("risk-game-account-displaced"));
   }
 
   async function verifyDeviceSession() {
-    if (!client || localStorage.getItem(RECOVERY_ENABLED_KEY) !== "true") return false;
-    await client.auth.getSession();
-    const result = await invoke("check_device", { deviceId: getDeviceId() });
-    if (result.active !== true) {
-      handleDeviceDisplaced();
+    if (!client || localStorage.getItem(DISPLACED_KEY) === "true") return false;
+
+    const { data, error } = await client.auth.getSession();
+    if (error) throw error;
+
+    if (!data?.session?.user) {
+      // 복구 계정으로 사용 중이던 기기의 세션이 사라졌다면 처음 화면으로 되돌립니다.
+      if (localStorage.getItem(RECOVERY_ENABLED_KEY) === "true") {
+        handleDeviceDisplaced();
+      }
       return false;
     }
-    deviceVerified = true;
-    displacementHandled = false;
-    return true;
+
+    try {
+      const result = await invoke("check_device", { deviceId: getDeviceId() });
+      if (result.active !== true) {
+        handleDeviceDisplaced();
+        return false;
+      }
+      deviceVerified = true;
+      displacementHandled = false;
+      return true;
+    } catch (error) {
+      const detail = String(error?.message || "").toLowerCase();
+      // 인증 만료/취소는 소유권 확인 실패로 처리하되, 일시적인 네트워크 오류는 로그아웃시키지 않습니다.
+      if (
+        detail.includes("401") ||
+        detail.includes("unauthorized") ||
+        detail.includes("invalid jwt") ||
+        detail.includes("not authenticated") ||
+        detail.includes("로그인된 계정이 필요") ||
+        detail.includes("계정을 확인할 수 없습니다")
+      ) {
+        handleDeviceDisplaced();
+        return false;
+      }
+      throw error;
+    }
   }
 
   function message(id, text, isError = false) {
@@ -398,7 +436,8 @@
     window.addEventListener("pagehide", saveCloudState);
     const recheckDeviceAndSync = async (syncState = true) => {
       if (document.visibilityState === "hidden" ||
-          localStorage.getItem(RECOVERY_ENABLED_KEY) !== "true" ||
+          localStorage.getItem(DISPLACED_KEY) === "true" ||
+          restoreInProgress ||
           deviceCheckInProgress) return;
       deviceCheckInProgress = true;
       try {
@@ -414,11 +453,11 @@
     window.addEventListener("pageshow", () => recheckDeviceAndSync(true));
     window.addEventListener("focus", () => recheckDeviceAndSync(true));
 
-    // 다른 기기에서 계정을 복구하면 앱이 계속 열려 있어도 최대 5초 안에 소유권 변경을 감지합니다.
-    // 주기 확인에서는 소유권만 검사하고 매번 게임 데이터를 덮어쓰지는 않습니다.
+    // 로그인된 계정의 기기 소유권을 계속 확인합니다.
+    // 다른 기기에서 복구하면 화면이 열려 있는 동안 약 2초 안에 로그아웃됩니다.
     window.setInterval(() => {
       if (document.visibilityState === "visible") recheckDeviceAndSync(false);
-    }, 5000);
+    }, 2000);
 
     if (localStorage.getItem(RECOVERY_ENABLED_KEY) === "true") {
       window.setTimeout(() => recheckDeviceAndSync(true), 100);
