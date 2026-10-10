@@ -253,6 +253,16 @@
       });
     }
 
+    // 테스트용 로그아웃 진입점에서 Supabase의 로컬 세션도 종료합니다.
+    if (localStorage.getItem("risk-game-force-local-logout-v1") === "true") {
+      localStorage.removeItem("risk-game-force-local-logout-v1");
+      if (client) {
+        client.auth.signOut().catch(error => {
+          console.warn("테스트 로그아웃 세션 정리 실패:", error);
+        });
+      }
+    }
+
     $("saveRecoverySetupButton")?.addEventListener("click", setupPassword);
     $("openRecoverySetupButton")?.addEventListener("click", () => {
       if (localStorage.getItem(RECOVERY_ENABLED_KEY) === "true") {
