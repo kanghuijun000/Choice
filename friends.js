@@ -89,8 +89,6 @@
           ? "온라인 연결됨 · 이름과 고유 코드는 유지됩니다."
           : "온라인 친구 기능 연결 중...";
     }
-    const summary = $("friendAccountSummary");
-    if (summary) summary.textContent = connected ? "온라인" : "연결 중";
   }
 
   async function fetchMyProfile() {
