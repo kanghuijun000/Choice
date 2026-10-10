@@ -80,8 +80,20 @@ Deno.serve(async (req) => {
 
     const digest = await digestPassword(password, hmacSecret);
     const { data, error } = await service.from("risk_game_recovery_credentials")
-      .select("synthetic_email").eq("password_digest", digest).maybeSingle();
+      .select("user_id, synthetic_email").eq("password_digest", digest).maybeSingle();
     if (error || !data) return reply({ error: "복구 비밀번호가 일치하는 계정을 찾지 못했습니다." }, 401);
+
+    // Older accounts have no substring fingerprints yet. Backfill them when the
+    // owner successfully proves the full recovery password; never block recovery
+    // if a legacy password conflicts with a fingerprint already claimed by another account.
+    const fingerprints = await passwordFingerprints(password, hmacSecret);
+    const { error: backfillError } = await service.rpc(
+      "reserve_risk_game_recovery_fingerprints",
+      { p_user_id: data.user_id, p_fingerprints: fingerprints },
+    );
+    if (backfillError) {
+      console.error("Recovery fingerprint backfill failed:", backfillError);
+    }
     return reply({ email: data.synthetic_email });
   }
 
