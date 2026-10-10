@@ -39,6 +39,7 @@
         const button = $(id);
         if (button) button.disabled = value;
       });
+    document.querySelectorAll("#friendRequests button").forEach(button => { button.disabled = value; });
   }
 
   function localProfile() {
@@ -122,6 +123,65 @@
     return row;
   }
 
+  function makeRequestRow(request) {
+    const row = document.createElement("div");
+    row.className = "friend-row friend-request-row";
+    const details = document.createElement("div");
+    details.className = "friend-row-details";
+    const name = document.createElement("strong");
+    name.textContent = request.sender_name || "이름 없는 플레이어";
+    const code = document.createElement("span");
+    code.textContent = "#" + (request.sender_code || "----");
+    const note = document.createElement("span");
+    note.textContent = "친구 요청을 보냈습니다.";
+    details.append(name, code, note);
+    const actions = document.createElement("div");
+    actions.className = "friend-request-actions";
+    const accept = document.createElement("button");
+    accept.type = "button";
+    accept.className = "friend-request-accept";
+    accept.textContent = "수락";
+    accept.disabled = busy;
+    accept.addEventListener("click", () => respondToRequest(request.id, true));
+    const decline = document.createElement("button");
+    decline.type = "button";
+    decline.className = "friend-request-decline";
+    decline.textContent = "거절";
+    decline.disabled = busy;
+    decline.addEventListener("click", () => respondToRequest(request.id, false));
+    actions.append(accept, decline);
+    row.append(details, actions);
+    return row;
+  }
+
+  async function loadRequests() {
+    const list = $("friendRequests");
+    if (!list) return;
+    list.replaceChildren();
+    if (!client || !currentUser) {
+      const empty = document.createElement("p");
+      empty.className = "muted friend-empty";
+      empty.textContent = "로그인하면 받은 친구 요청을 확인할 수 있습니다.";
+      list.append(empty);
+      return;
+    }
+    const { data: requests, error } = await client
+      .from("friend_requests")
+      .select("id, sender_id, sender_name, sender_code, created_at")
+      .eq("receiver_id", currentUser.id)
+      .eq("status", "pending")
+      .order("created_at", { ascending: true });
+    if (error) throw error;
+    if (!requests || requests.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "muted friend-empty";
+      empty.textContent = "새로운 친구 요청이 없습니다.";
+      list.append(empty);
+      return;
+    }
+    requests.forEach(request => list.append(makeRequestRow(request)));
+  }
+
   async function loadFriends() {
     const list = $("friendList");
     list.replaceChildren();
@@ -174,6 +234,7 @@
     try {
       await fetchMyProfile();
       await loadFriends();
+      await loadRequests();
       updateAccountUi();
     } catch (error) {
       console.error(error);
@@ -188,6 +249,7 @@
       await refreshCloudData();
     } else {
       await loadFriends();
+      await loadRequests();
       setMessage("");
     }
   }
@@ -253,6 +315,7 @@
       currentUser = null;
       updateAccountUi();
       await loadFriends();
+      await loadRequests();
       setMessage("로그아웃했습니다. 이 기기의 게임 진행 데이터는 그대로 유지됩니다.");
     } catch (error) {
       setMessage(error.message || "로그아웃에 실패했습니다.", true);
@@ -264,13 +327,11 @@
   async function addFriend() {
     if (busy) return;
     if (!client || !currentUser) {
-      return setMessage("친구를 추가하려면 먼저 온라인 계정으로 로그인하세요.", true);
+      return setMessage("친구 요청을 보내려면 먼저 온라인 계정으로 로그인하세요.", true);
     }
-
     const input = $("friendCodeInput").value.trim();
     const match = input.match(/^(.+)#(\d{4})$/);
     if (!match) return setMessage("이름#4자리코드 형식으로 입력하세요. 예: 이름#0123", true);
-
     const name = match[1].trim();
     const code = match[2];
     if (!name || name.length > 20) return setMessage("이름을 확인하세요.", true);
@@ -279,29 +340,68 @@
     setMessage("");
     try {
       const { data: matches, error: lookupError } = await client.rpc(
-        "lookup_risk_game_friend",
-        { p_name: name, p_code: code }
+        "lookup_risk_game_friend", { p_name: name, p_code: code }
       );
       if (lookupError) throw lookupError;
       const target = Array.isArray(matches) ? matches[0] : matches;
       if (!target) return setMessage("일치하는 계정을 찾지 못했습니다. 이름과 4자리 코드를 확인하세요.", true);
-      if (target.id === currentUser.id) return setMessage("자기 자신은 친구로 추가할 수 없습니다.", true);
+      if (target.id === currentUser.id) return setMessage("자기 자신에게 친구 요청을 보낼 수 없습니다.", true);
 
-      const { error: insertError } = await client.from("user_friends").insert({
-        user_id: currentUser.id,
-        friend_id: target.id
+      const { data: existingFriend, error: friendCheckError } = await client
+        .from("user_friends").select("friend_id")
+        .eq("user_id", currentUser.id).eq("friend_id", target.id).maybeSingle();
+      if (friendCheckError) throw friendCheckError;
+      if (existingFriend) return setMessage("이미 친구 목록에 있는 계정입니다.", true);
+
+      const { data: incoming, error: incomingError } = await client
+        .from("friend_requests").select("id")
+        .eq("sender_id", target.id).eq("receiver_id", currentUser.id)
+        .eq("status", "pending").limit(1);
+      if (incomingError) throw incomingError;
+      if (incoming && incoming.length) {
+        await loadRequests();
+        return setMessage("이 계정이 먼저 친구 요청을 보냈습니다. 아래 친구 요청에서 수락하거나 거절하세요.", true);
+      }
+
+      const me = await fetchMyProfile();
+      if (!me) throw new Error("내 계정 정보를 불러오지 못했습니다.");
+      const { error: insertError } = await client.from("friend_requests").insert({
+        sender_id: currentUser.id,
+        receiver_id: target.id,
+        sender_name: me.display_name,
+        sender_code: me.friend_code,
+        status: "pending"
       });
       if (insertError?.code === "23505") {
-        return setMessage("이미 친구 목록에 있는 계정입니다.", true);
+        return setMessage("이미 보낸 친구 요청이 아직 처리되지 않았습니다.", true);
       }
       if (insertError) throw insertError;
-
       $("friendCodeInput").value = "";
-      await loadFriends();
-      setMessage(target.display_name + " 님을 친구로 추가했습니다.");
+      setMessage(target.display_name + " 님에게 친구 요청을 보냈습니다. 상대방이 수락하면 서로 친구가 됩니다.");
     } catch (error) {
       console.error(error);
-      setMessage("친구 추가에 실패했습니다. Supabase SQL 설정과 연결 상태를 확인하세요.", true);
+      setMessage(error.message || "친구 요청 전송에 실패했습니다. Supabase 설정을 확인하세요.", true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function respondToRequest(requestId, accept) {
+    if (!client || !currentUser || busy) return;
+    setBusy(true);
+    setMessage("");
+    try {
+      const functionName = accept ? "accept_risk_game_friend_request" : "decline_risk_game_friend_request";
+      const { error } = await client.rpc(functionName, { p_request_id: requestId });
+      if (error) throw error;
+      await loadFriends();
+      await loadRequests();
+      setMessage(accept
+        ? "친구 요청을 수락했습니다. 서로의 친구 목록에 등록되었습니다."
+        : "친구 요청을 거절했습니다.");
+    } catch (error) {
+      console.error(error);
+      setMessage(error.message || "친구 요청 처리에 실패했습니다. 다시 시도하세요.", true);
     } finally {
       setBusy(false);
     }
@@ -370,6 +470,12 @@
     });
 
     updateAccountUi();
+    loadRequests().catch(error => console.error("친구 요청 불러오기 실패:", error));
+    window.setInterval(() => {
+      if (currentUser && !$("friendScreen").classList.contains("hidden")) {
+        loadRequests().catch(error => console.error("친구 요청 새로고침 실패:", error));
+      }
+    }, 15000);
 
     if (!configured) {
       setAuthMessage("Supabase 연결 전입니다. 설정 파일과 데이터베이스 SQL을 먼저 준비하세요.", true);
@@ -388,7 +494,7 @@
         currentUser = session?.user || null;
         updateAccountUi();
         if (currentUser) setTimeout(() => refreshCloudData(), 0);
-        else loadFriends();
+        else { loadFriends(); loadRequests(); }
       });
     }
   }
