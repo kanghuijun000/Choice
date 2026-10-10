@@ -283,12 +283,11 @@ function estimateChoiceValue(choice) {
 
   let multiplier = baseMultiplier * penaltyMultiplier;
 
-  // 보너스는 미래 선택지 구성에 좌우되므로 과대평가하지 않고 완만하게 반영합니다.
+  // 보너스의 장기 효과는 시뮬레이션 결과에 맞춰 턴당 0.4%만 보수적으로 반영합니다.
   if (choice.bonusType === "reduceLoss") {
     multiplier += Math.min(10, choice.bonusTurns || 5) * 0.004;
   } else if (choice.bonusType === "safePositive") {
-    // 10턴 동안 안전한 양수 선택지가 더 자주 등장하는 장기 효과를 반영합니다.
-    // 낮게 평가하면 +10% 보상에 붙은 이 보너스가 위험 없는 정답처럼 취급될 수 있습니다.
+    // 10턴 동안 안전한 양수 선택지가 더 자주 등장하는 효과를 과대평가하지 않도록 반영합니다.
     multiplier += Math.min(10, choice.bonusTurns || 10) * 0.004;
   }
 
