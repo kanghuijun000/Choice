@@ -717,6 +717,7 @@ function openProfileEditor(initialSetup = false) {
     : "온라인 계정 연결 후 4자리 코드가 부여됩니다.";
   $("saveProfileButton").textContent = initialSetup ? "등록하기" : "변경 저장";
   $("cancelProfileButton").classList.toggle("hidden", initialSetup);
+  $("backToAccountChoiceButton").classList.toggle("hidden", !initialSetup);
   $("profileModal").dataset.initialSetup = initialSetup ? "true" : "false";
   $("profileNameInput").focus();
 }
@@ -725,6 +726,15 @@ function closeProfileEditor() {
   if (!profile) return;
   $("profileModal").classList.add("hidden");
 }
+
+$("backToAccountChoiceButton").addEventListener("click", () => {
+  // 아직 신규 프로필을 저장하지 않았을 때만 계정 선택 화면으로 돌아갑니다.
+  if ($("profileModal").dataset.initialSetup !== "true") return;
+  $("profileModal").classList.add("hidden");
+  $("profileError").textContent = "";
+  $("profileNameInput").value = "";
+  showScreen("accountChoiceScreen");
+});
 
 $("saveProfileButton").addEventListener("click", () => {
   const name = $("profileNameInput").value.trim();
