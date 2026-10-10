@@ -23,7 +23,7 @@ async function digestPassword(password: string, secret: string) {
 
 function validPassword(password: unknown): password is string {
   return typeof password === "string" && password.length >= 12 &&
-    password.length <= 128 && !password.includes("\\u0000");
+    password.length <= 128 && !password.includes("\u0000");
 }
 
 Deno.serve(async (req) => {
@@ -46,6 +46,15 @@ Deno.serve(async (req) => {
   if (action === "lookup") {
     const password = body.password;
     if (!validPassword(password)) return reply({ error: "복구 비밀번호가 올바르지 않습니다." }, 400);
+    const forwardedFor = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
+    const clientIp = forwardedFor.split(",")[0].trim().slice(0, 128);
+    const ipHash = await digestPassword(clientIp, hmacSecret);
+    const { data: allowed, error: limitError } = await service.rpc("consume_risk_game_recovery_attempt", {
+      p_ip_hash: ipHash, p_limit: 8,
+    });
+    if (limitError) return reply({ error: "복구 서버의 보안 제한 기능이 준비되지 않았습니다. 잠시 후 다시 시도하세요." }, 503);
+    if (allowed !== true) return reply({ error: "시도 횟수가 너무 많습니다. 1분 뒤 다시 시도하세요." }, 429);
+
     const digest = await digestPassword(password, hmacSecret);
     const { data, error } = await service.from("risk_game_recovery_credentials")
       .select("synthetic_email").eq("password_digest", digest).maybeSingle();
@@ -68,7 +77,7 @@ Deno.serve(async (req) => {
     const password = body.password;
     if (!validPassword(password)) return reply({ error: "비밀번호는 12~128자로 설정해 주세요." }, 400);
     const digest = await digestPassword(password, hmacSecret);
-    const email = `rg-${digest}@recovery.risk-game.invalid`;
+    const email = `rg-${digest.slice(0, 60)}@recovery.risk-game.invalid`;
 
     if (action === "change") {
       const oldPassword = body.oldPassword;
