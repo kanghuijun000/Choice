@@ -22,7 +22,7 @@ async function digestPassword(password: string, secret: string) {
 }
 
 function validPassword(password: unknown): password is string {
-  return typeof password === "string" && password.length >= 12 &&
+  return typeof password === "string" && password.length >= 10 &&
     password.length <= 128 && !password.includes("\u0000");
 }
 
@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
 
   if (action === "register" || action === "change") {
     const password = body.password;
-    if (!validPassword(password)) return reply({ error: "비밀번호는 12~128자로 설정해 주세요." }, 400);
+    if (!validPassword(password)) return reply({ error: "비밀번호는 10~128자로 설정해 주세요." }, 400);
     const digest = await digestPassword(password, hmacSecret);
     const email = `rg-${digest.slice(0, 60)}@recovery.risk-game.invalid`;
 
