@@ -19,6 +19,18 @@ const WAGE_AMOUNT = 5000;
 const WAGE_COOLDOWN_MS = 3600000;
 
 const $ = id => document.getElementById(id);
+
+// 테스트용 1회 진입점: ?start=account-choice 로 열면 이 기기에서만 로그아웃 화면을 표시합니다.
+// 서버 계정과 클라우드 게임 데이터는 삭제하거나 다른 기기로 이전하지 않습니다.
+const FORCE_LOCAL_LOGOUT_KEY = "risk-game-force-local-logout-v1";
+if (new URLSearchParams(window.location.search).get("start") === "account-choice") {
+  localStorage.removeItem("risk-game-recovery-enabled-v1");
+  localStorage.setItem("risk-game-account-displaced-v1", "true");
+  localStorage.setItem(FORCE_LOCAL_LOGOUT_KEY, "true");
+  const url = new URL(window.location.href);
+  url.searchParams.delete("start");
+  window.history.replaceState({}, "", url.pathname + url.search + url.hash);
+}
 const moneyFormat = new Intl.NumberFormat("ko-KR", {
   maximumFractionDigits: 0
 });
